@@ -1,0 +1,8 @@
+nicegui
+sqlmodel
+sqlalchemy
+aiosqlite
+pydantic>=2
+httpx
+apscheduler
+python-dotenv
