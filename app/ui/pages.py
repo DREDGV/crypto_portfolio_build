@@ -132,7 +132,7 @@ def portfolio_page():
                     ui.button('✏️', on_click=lambda: open_edit_dialog(row)).props('flat size=sm').tooltip('Редактировать')
                     ui.button('🗑️', on_click=lambda: (delete_transaction(rid), ui.notify('Удалено', color='positive'), refresh())).props('flat size=sm').tooltip('Удалить')
 
-            tx_table.add_slot('body-cell-actions', lambda row, **k: table_row_with_actions(row))
+            tx_table.add_slot('body-cell-actions', table_row_with_actions)
 
             with ui.row().classes('mt-2'):
                 ui.button('Экспорт сделок (CSV)', on_click=lambda: export_tx())
