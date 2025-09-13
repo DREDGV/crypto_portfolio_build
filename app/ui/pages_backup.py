@@ -83,7 +83,7 @@ def open_edit_dialog(row, refresh_callback=None):
         with ui.row().classes('justify-end gap-3 mt-6'):
             def save_changes():
                 try:
-                update_transaction(
+                    update_transaction(
                     data['id'],
                     TransactionIn(
                         coin=(e_coin.value or '').upper().strip(),
