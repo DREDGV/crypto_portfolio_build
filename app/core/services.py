@@ -111,3 +111,63 @@ def backup_database() -> str:
     target = os.path.join(backup_dir, "portfolio_backup_" + time.strftime("%Y%m%d_%H%M%S") + ".db")
     shutil.copy(DB_PATH, target)
     return target
+
+def export_transactions_csv() -> str:
+    """Экспортирует все сделки в CSV файл"""
+    export_dir = os.path.join(os.path.dirname(DB_PATH), 'exports')
+    os.makedirs(export_dir, exist_ok=True)
+    
+    filename = f"transactions_{time.strftime('%Y%m%d_%H%M%S')}.csv"
+    filepath = os.path.join(export_dir, filename)
+    
+    transactions = list_transactions()
+    
+    with open(filepath, 'w', newline='', encoding='utf-8') as f:
+        if not transactions:
+            f.write("id,coin,type,quantity,price,ts_local,strategy,source,notes\n")
+        else:
+            # Заголовки
+            headers = list(transactions[0].keys())
+            f.write(','.join(headers) + '\n')
+            
+            # Данные
+            for tx in transactions:
+                row = []
+                for header in headers:
+                    value = tx.get(header, '')
+                    # Экранируем запятые в значениях
+                    if ',' in str(value):
+                        value = f'"{value}"'
+                    row.append(str(value))
+                f.write(','.join(row) + '\n')
+    
+    return filepath
+
+def export_positions_csv(positions: list[dict]) -> str:
+    """Экспортирует позиции в CSV файл"""
+    export_dir = os.path.join(os.path.dirname(DB_PATH), 'exports')
+    os.makedirs(export_dir, exist_ok=True)
+    
+    filename = f"positions_{time.strftime('%Y%m%d_%H%M%S')}.csv"
+    filepath = os.path.join(export_dir, filename)
+    
+    with open(filepath, 'w', newline='', encoding='utf-8') as f:
+        if not positions:
+            f.write("coin,strategy,quantity,avg_cost,price,value,unreal_pnl,unreal_pct,realized\n")
+        else:
+            # Заголовки
+            headers = list(positions[0].keys())
+            f.write(','.join(headers) + '\n')
+            
+            # Данные
+            for pos in positions:
+                row = []
+                for header in headers:
+                    value = pos.get(header, '')
+                    # Экранируем запятые в значениях
+                    if ',' in str(value):
+                        value = f'"{value}"'
+                    row.append(str(value))
+                f.write(','.join(row) + '\n')
+    
+    return filepath

@@ -3,7 +3,7 @@ SETLOCAL
 cd /d %~dp0
 
 echo ========================================
-echo   Настройка тестовой среды
+echo   Быстрый запуск приложения
 echo ========================================
 
 echo.
@@ -12,13 +12,12 @@ python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ОШИБКА: Python не найден!
     echo Установите Python 3.13 с https://python.org
-    echo Убедитесь, что Python добавлен в PATH
     pause
     exit /b 1
 )
 
-echo Python найден! Создаем виртуальное окружение...
-
+echo.
+echo Создаем виртуальное окружение (если нужно)...
 if not exist .venv (
     echo Создаем виртуальное окружение...
     python -m venv .venv
@@ -27,8 +26,6 @@ if not exist .venv (
         pause
         exit /b 1
     )
-) else (
-    echo Виртуальное окружение уже существует
 )
 
 echo.
@@ -41,10 +38,6 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Обновляем pip...
-python -m pip install --upgrade pip
-
-echo.
 echo Устанавливаем зависимости...
 pip install -r requirements.txt
 if %errorlevel% neq 0 (
@@ -54,16 +47,19 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Создаем тестовые данные...
-python create_test_data.py
+echo Создаем папки для данных...
+if not exist data mkdir data
+if not exist data\backups mkdir data\backups
+if not exist data\exports mkdir data\exports
 
 echo.
 echo ========================================
-echo   Готово! Теперь можно запускать:
+echo   Запускаем приложение...
 echo ========================================
 echo.
-echo   run_dev.bat     - режим разработки
-echo   run_prod.bat    - обычный режим
-echo   test_app.bat    - быстрый тест
+echo Приложение будет доступно по адресу: http://127.0.0.1:8080
+echo Для остановки нажмите Ctrl+C
 echo.
-pause
+
+set DEV=1
+python -m app.main
