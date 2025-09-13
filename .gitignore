@@ -50,6 +50,11 @@ data/
 *.sqlite
 *.sqlite3
 
+# Test data (keep structure but ignore content)
+data/portfolio.db
+data/backups/
+data/exports/
+
 # Logs
 *.log
 logs/
