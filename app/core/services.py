@@ -171,3 +171,184 @@ def export_positions_csv(positions: list[dict]) -> str:
                 f.write(','.join(row) + '\n')
     
     return filepath
+
+def get_portfolio_stats() -> dict:
+    """Возвращает детальную статистику портфеля"""
+    positions = positions_fifo()
+    enriched, totals = enrich_positions_with_market(positions)
+    
+    # Статистика по монетам
+    coin_stats = {}
+    for pos in enriched:
+        coin = pos['coin']
+        if coin not in coin_stats:
+            coin_stats[coin] = {
+                'total_value': 0,
+                'total_pnl': 0,
+                'positions_count': 0,
+                'strategies': set()
+            }
+        coin_stats[coin]['total_value'] += pos['value']
+        coin_stats[coin]['total_pnl'] += pos['unreal_pnl'] + pos['realized']
+        coin_stats[coin]['positions_count'] += 1
+        coin_stats[coin]['strategies'].add(pos['strategy'])
+    
+    # Конвертируем set в list для JSON сериализации
+    for coin in coin_stats:
+        coin_stats[coin]['strategies'] = list(coin_stats[coin]['strategies'])
+    
+    # Статистика по стратегиям
+    strategy_stats = {}
+    for pos in enriched:
+        strategy = pos['strategy']
+        if strategy not in strategy_stats:
+            strategy_stats[strategy] = {
+                'total_value': 0,
+                'total_pnl': 0,
+                'positions_count': 0
+            }
+        strategy_stats[strategy]['total_value'] += pos['value']
+        strategy_stats[strategy]['total_pnl'] += pos['unreal_pnl'] + pos['realized']
+        strategy_stats[strategy]['positions_count'] += 1
+    
+    # Топ позиции по PnL
+    top_positions = sorted(enriched, key=lambda x: x['unreal_pnl'] + x['realized'], reverse=True)[:5]
+    
+    # Общая статистика
+    total_positions = len(enriched)
+    total_coins = len(coin_stats)
+    total_strategies = len(strategy_stats)
+    
+    return {
+        'totals': totals,
+        'coin_stats': coin_stats,
+        'strategy_stats': strategy_stats,
+        'top_positions': top_positions,
+        'summary': {
+            'total_positions': total_positions,
+            'total_coins': total_coins,
+            'total_strategies': total_strategies
+        }
+    }
+
+def get_transaction_stats() -> dict:
+    """Возвращает статистику по сделкам"""
+    transactions = list_transactions()
+    
+    if not transactions:
+        return {
+            'total_transactions': 0,
+            'transactions_by_type': {},
+            'transactions_by_coin': {},
+            'transactions_by_strategy': {},
+            'recent_transactions': []
+        }
+    
+    # Статистика по типам
+    type_stats = {}
+    coin_stats = {}
+    strategy_stats = {}
+    
+    for tx in transactions:
+        # По типам
+        tx_type = tx['type']
+        type_stats[tx_type] = type_stats.get(tx_type, 0) + 1
+        
+        # По монетам
+        coin = tx['coin']
+        coin_stats[coin] = coin_stats.get(coin, 0) + 1
+        
+        # По стратегиям
+        strategy = tx['strategy']
+        strategy_stats[strategy] = strategy_stats.get(strategy, 0) + 1
+    
+    # Последние 5 сделок
+    recent_transactions = transactions[:5]
+    
+    return {
+        'total_transactions': len(transactions),
+        'transactions_by_type': type_stats,
+        'transactions_by_coin': coin_stats,
+        'transactions_by_strategy': strategy_stats,
+        'recent_transactions': recent_transactions
+    }
+
+# Простая система алертов (в памяти)
+_alert_rules = []
+_alert_history = []
+
+def add_alert_rule(coin: str, strategy: str, alert_type: str, threshold: float, message: str = "") -> int:
+    """Добавляет правило алерта"""
+    rule_id = len(_alert_rules) + 1
+    rule = {
+        'id': rule_id,
+        'coin': coin.upper(),
+        'strategy': strategy,
+        'type': alert_type,  # 'price_up', 'price_down', 'pnl_up', 'pnl_down'
+        'threshold': threshold,
+        'message': message,
+        'active': True,
+        'created_at': dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    _alert_rules.append(rule)
+    return rule_id
+
+def get_alert_rules() -> list:
+    """Возвращает все правила алертов"""
+    return _alert_rules
+
+def delete_alert_rule(rule_id: int) -> bool:
+    """Удаляет правило алерта"""
+    global _alert_rules
+    _alert_rules = [r for r in _alert_rules if r['id'] != rule_id]
+    return True
+
+def check_alerts() -> list:
+    """Проверяет все активные алерты"""
+    triggered = []
+    positions = positions_fifo()
+    enriched, _ = enrich_positions_with_market(positions)
+    
+    for rule in _alert_rules:
+        if not rule['active']:
+            continue
+            
+        # Находим позиции, соответствующие правилу
+        matching_positions = [p for p in enriched 
+                            if p['coin'] == rule['coin'] and 
+                            (rule['strategy'] == 'all' or p['strategy'] == rule['strategy'])]
+        
+        for pos in matching_positions:
+            triggered_this_pos = False
+            
+            if rule['type'] == 'price_up' and pos['price'] >= rule['threshold']:
+                triggered_this_pos = True
+                message = f"Цена {pos['coin']} выросла до {pos['price']:.2f} {CURRENCY}"
+            elif rule['type'] == 'price_down' and pos['price'] <= rule['threshold']:
+                triggered_this_pos = True
+                message = f"Цена {pos['coin']} упала до {pos['price']:.2f} {CURRENCY}"
+            elif rule['type'] == 'pnl_up' and pos['unreal_pnl'] >= rule['threshold']:
+                triggered_this_pos = True
+                message = f"PnL {pos['coin']} вырос до {pos['unreal_pnl']:+.2f} {CURRENCY}"
+            elif rule['type'] == 'pnl_down' and pos['unreal_pnl'] <= rule['threshold']:
+                triggered_this_pos = True
+                message = f"PnL {pos['coin']} упал до {pos['unreal_pnl']:+.2f} {CURRENCY}"
+            
+            if triggered_this_pos:
+                alert = {
+                    'rule_id': rule['id'],
+                    'coin': pos['coin'],
+                    'strategy': pos['strategy'],
+                    'message': rule['message'] or message,
+                    'triggered_at': dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'price': pos['price'],
+                    'pnl': pos['unreal_pnl']
+                }
+                triggered.append(alert)
+                _alert_history.append(alert)
+    
+    return triggered
+
+def get_alert_history() -> list:
+    """Возвращает историю срабатываний алертов"""
+    return sorted(_alert_history, key=lambda x: x['triggered_at'], reverse=True)
