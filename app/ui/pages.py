@@ -11,13 +11,13 @@ CURRENCY = os.getenv('REPORT_CURRENCY', 'USD').upper()
 TYPES = ['buy','sell','exchange_in','exchange_out','deposit','withdrawal']
 STRATS = ['long','mid','short','scalp']
 
-def table_row_with_actions(row):
+def table_row_with_actions(row, refresh_callback=None):
     rid = int(row['id'])
     with ui.row().classes('gap-1'):
-        ui.button('✏️', on_click=lambda: open_edit_dialog(row)).props('flat size=sm').tooltip('Редактировать')
-        ui.button('🗑️', on_click=lambda: (delete_transaction(rid), ui.notify('Удалено', color='positive'), refresh())).props('flat size=sm').tooltip('Удалить')
+        ui.button('✏️', on_click=lambda: open_edit_dialog(row, refresh_callback)).props('flat size=sm').tooltip('Редактировать')
+        ui.button('🗑️', on_click=lambda: (delete_transaction(rid), ui.notify('Удалено', color='positive'), refresh_callback() if refresh_callback else None)).props('flat size=sm').tooltip('Удалить')
 
-def open_edit_dialog(row):
+def open_edit_dialog(row, refresh_callback=None):
     data = get_transaction(int(row['id']))
     with ui.dialog() as dialog, ui.card().classes('min-w-[420px]'):
         ui.label(f'Редактировать сделку #{data["id"]}').classes('text-md font-bold')
@@ -43,7 +43,9 @@ def open_edit_dialog(row):
                     )
                 )
                 ui.notify('Сделка обновлена', color='positive')
-                dialog.close(); refresh()
+                dialog.close()
+                if refresh_callback:
+                    refresh_callback()
             ui.button('Сохранить', on_click=save_changes)
             ui.button('Отмена', on_click=dialog.close)
         dialog.open()
@@ -133,7 +135,25 @@ def portfolio_page():
             tx_table = ui.table(columns=cols, rows=[], row_key='id').classes('w-full mt-2')
 
 
-            tx_table.add_slot('body-cell-actions', table_row_with_actions)
+            # Используем строковый template для actions колонки
+            tx_table.add_slot('body-cell-actions', '''
+                <q-td :props="props" auto-width>
+                    <q-btn flat size="sm" icon="edit" @click="$parent.$emit('edit', props.row)" />
+                    <q-btn flat size="sm" icon="delete" @click="$parent.$emit('delete', props.row)" />
+                </q-td>
+            ''')
+            
+            # Добавляем обработчики событий
+            def handle_edit(e):
+                open_edit_dialog(e.args, refresh)
+            
+            def handle_delete(e):
+                delete_transaction(int(e.args['id']))
+                ui.notify('Удалено', color='positive')
+                refresh()
+            
+            tx_table.on('edit', handle_edit)
+            tx_table.on('delete', handle_delete)
 
             with ui.row().classes('mt-2'):
                 ui.button('Экспорт сделок (CSV)', on_click=lambda: export_tx())
