@@ -6,6 +6,43 @@ import httpx
 
 _cache: dict[tuple[str, str], tuple[float, float]] = {}
 
+# Импортируем адаптер для акций
+from .stock_prices import StockPriceAdapter
+
+
+class PriceAdapter:
+    """Адаптер для получения цен криптовалют и акций"""
+
+    def __init__(self):
+        self.stock_adapter = StockPriceAdapter()
+
+    def get_price(self, symbol: str, asset_type: str = "crypto") -> dict | None:
+        """Получает цену актива
+
+        Args:
+            symbol: Символ актива (BTC, ETH, AAPL, MSFT)
+            asset_type: Тип актива ("crypto" или "stock")
+
+        Returns:
+            dict: Данные о цене или None
+        """
+        if asset_type == "stock":
+            return self.stock_adapter.get_price(symbol)
+        else:
+            # Для криптовалют используем существующую логику
+            price = get_current_price(symbol)
+            if price:
+                return {
+                    "price": price,
+                    "currency": "USD",
+                    "change_24h": 0,  # Заглушка
+                    "change_percent_24h": 0,  # Заглушка
+                    "volume": 0,  # Заглушка
+                    "exchange": "Crypto",
+                }
+            return None
+
+
 ID_MAP = {
     "BTC": "bitcoin",
     "ETH": "ethereum",

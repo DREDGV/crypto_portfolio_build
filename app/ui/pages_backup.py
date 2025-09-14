@@ -118,7 +118,6 @@ def open_edit_dialog(row, refresh_callback=None):
 
         # Кнопки действий
         with ui.row().classes("justify-end gap-3 mt-6"):
-
             def save_changes():
                 try:
                     update_transaction(
@@ -294,8 +293,8 @@ def show_about_page():
                 )
 
 
-def open_add_crypto_dialog():
-    """Открывает диалог добавления новой криптовалютной сделки"""
+def open_add_dialog():
+    """Открывает диалог добавления новой сделки"""
     with ui.dialog() as dialog, ui.card().classes("min-w-[600px] max-w-[800px] p-6"):
         # Заголовок диалога
         with ui.row().classes("items-center gap-2 mb-4"):
@@ -383,120 +382,74 @@ def portfolio_page():
     # Создаем основной контейнер с боковой панелью
     with ui.row().classes("w-full h-screen overflow-hidden"):
         # БОКОВАЯ ПАНЕЛЬ
-        with ui.column().classes(
-            "w-64 bg-gray-900 text-white p-4 space-y-4 overflow-y-auto"
-        ):
+        with ui.column().classes("w-64 bg-gray-900 text-white p-4 space-y-4 overflow-y-auto"):
             # Заголовок боковой панели
             with ui.row().classes("items-center gap-2 mb-6"):
                 ui.icon("account_balance_wallet").classes("text-2xl text-blue-400")
                 with ui.column().classes("gap-1"):
-                    ui.label("Portfolio Manager").classes(
-                        "text-lg font-bold text-white"
-                    )
-                    ui.label(f"v{get_app_info()['version']}").classes(
-                        "text-xs text-gray-300 font-medium"
-                    )
-
+                    ui.label("Portfolio Manager").classes("text-lg font-bold text-white")
+                    ui.label(f"v{get_app_info()['version']}").classes("text-xs text-gray-400")
+            
             # НАВИГАЦИЯ
             with ui.column().classes("space-y-2"):
-                ui.label("Навигация").classes(
-                    "text-sm font-semibold text-gray-300 uppercase tracking-wide"
-                )
-
+                ui.label("Навигация").classes("text-sm font-semibold text-gray-300 uppercase tracking-wide")
+                
                 # Главные разделы
-                overview_btn = (
-                    ui.button("📊 Обзор", icon="dashboard")
-                    .classes(
-                        "w-full justify-start text-left bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: switch_to_tab("overview"))
+                overview_btn = ui.button("📊 Обзор", icon="dashboard").classes(
+                    "w-full justify-start text-left bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 )
-
-                positions_btn = (
-                    ui.button("💼 Позиции", icon="account_balance")
-                    .classes(
-                        "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: switch_to_tab("positions"))
+                
+                positions_btn = ui.button("💼 Позиции", icon="account_balance").classes(
+                    "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 )
-
-                transactions_btn = (
-                    ui.button("📝 Сделки", icon="receipt_long")
-                    .classes(
-                        "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: switch_to_tab("transactions"))
+                
+                transactions_btn = ui.button("📝 Сделки", icon="receipt_long").classes(
+                    "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 )
-
-                analytics_btn = (
-                    ui.button("📈 Аналитика", icon="analytics")
-                    .classes(
-                        "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: switch_to_tab("analytics"))
+                
+                analytics_btn = ui.button("📈 Аналитика", icon="analytics").classes(
+                    "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 )
-
+            
             # БЫСТРЫЕ ДЕЙСТВИЯ
             with ui.column().classes("space-y-2 mt-6"):
-                ui.label("Быстрые действия").classes(
-                    "text-sm font-semibold text-gray-300 uppercase tracking-wide"
-                )
-
+                ui.label("Быстрые действия").classes("text-sm font-semibold text-gray-300 uppercase tracking-wide")
+                
                 # Главная кнопка - добавить сделку
-                add_btn = (
-                    ui.button("+ Добавить сделку", icon="add")
-                    .classes(
-                        "w-full justify-start text-left bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-200"
-                    )
-                    .on("click", lambda: open_add_dialog())
-                )
-
+                add_btn = ui.button("+ Добавить сделку", icon="add").classes(
+                    "w-full justify-start text-left bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-200"
+                ).on("click", lambda: open_add_dialog())
+                
                 # Обновить данные
-                refresh_button = (
-                    ui.button("🔄 Обновить", icon="refresh")
-                    .classes(
-                        "w-full justify-start text-left bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: refresh())
-                )
-
+                refresh_button = ui.button("🔄 Обновить", icon="refresh").classes(
+                    "w-full justify-start text-left bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
+                ).on("click", lambda: refresh())
+                
                 # Экспорт данных
-                export_btn = (
-                    ui.button("📤 Экспорт", icon="download")
-                    .classes(
-                        "w-full justify-start text-left bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: ui.notify("Функция в разработке", type="info"))
-                )
-
+                export_btn = ui.button("📤 Экспорт", icon="download").classes(
+                    "w-full justify-start text-left bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
+                ).on("click", lambda: ui.notify("Функция в разработке", type="info"))
+            
             # ТИПЫ АКТИВОВ
             with ui.column().classes("space-y-2 mt-6"):
-                ui.label("Типы активов").classes(
-                    "text-sm font-semibold text-gray-300 uppercase tracking-wide"
-                )
-
+                ui.label("Типы активов").classes("text-sm font-semibold text-gray-300 uppercase tracking-wide")
+                
                 # Криптовалюты (активно по умолчанию)
-                crypto_btn = ui.button(
-                    "₿ Криптовалюты", icon="currency_bitcoin"
-                ).classes(
+                crypto_btn = ui.button("₿ Криптовалюты", icon="currency_bitcoin").classes(
                     "w-full justify-start text-left bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 )
-
+                
                 # Акции
-                stocks_btn = (
-                    ui.button("📈 Акции", icon="trending_up")
-                    .classes(
-                        "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
-                    )
-                    .on("click", lambda: open_add_stock_dialog())
-                )
-
+                stocks_btn = ui.button("📈 Акции", icon="trending_up").classes(
+                    "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
+                ).on("click", lambda: ui.notify("Поддержка акций в разработке", type="info"))
+            
             # НИЖНЯЯ ЧАСТЬ
             with ui.column().classes("space-y-2 mt-auto pt-6"):
                 ui.button("ℹ️ О программе", icon="info").classes(
                     "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 ).on("click", lambda: ui.navigate.to("/about"))
-
+                
                 ui.button("⚙️ Настройки", icon="settings").classes(
                     "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                 ).on("click", lambda: ui.notify("Настройки в разработке", type="info"))
@@ -519,9 +472,9 @@ def portfolio_page():
                             ui.label("Управление криптовалютным портфелем").classes(
                                 "text-sm text-blue-100"
                             )
-                        ui.badge(
-                            f"v{get_app_info()['version']}", color="white"
-                        ).classes("text-xs bg-white/20 text-white border-white/30")
+                        ui.badge(f"v{get_app_info()['version']}", color="white").classes(
+                            "text-xs bg-white/20 text-white border-white/30"
+                        )
 
                     # Кнопки управления с приоритизацией
                     with ui.row().classes("gap-3"):
@@ -554,8 +507,7 @@ def portfolio_page():
                                 ui.menu_item(
                                     "📈 Показать аналитику",
                                     on_click=lambda: ui.notify(
-                                        "Переключитесь на вкладку 'Аналитика'",
-                                        type="info",
+                                        "Переключитесь на вкладку 'Аналитика'", type="info"
                                     ),
                                 )
 
@@ -577,9 +529,7 @@ def portfolio_page():
                 with ui.row().classes("items-center justify-between"):
                     with ui.row().classes("items-center gap-2"):
                         ui.icon("filter_list").classes("text-lg text-gray-600")
-                        ui.label("Фильтры").classes(
-                            "text-lg font-semibold text-gray-700"
-                        )
+                        ui.label("Фильтры").classes("text-lg font-semibold text-gray-700")
 
                     # Кнопка развернуть/свернуть фильтры
                     filter_toggle = ui.button("Показать", icon="expand_more").classes(
@@ -631,66 +581,34 @@ def portfolio_page():
             with tabs:
                 # Высокий приоритет - основные функции
                 ui.tab("overview", "📊 Обзор").classes("px-6 py-3 text-sm font-medium")
-                ui.tab("positions", "💼 Позиции").classes(
-                    "px-6 py-3 text-sm font-medium"
-                )
-                ui.tab("transactions", "📝 Сделки").classes(
-                    "px-6 py-3 text-sm font-medium"
-                )
+                ui.tab("positions", "💼 Позиции").classes("px-6 py-3 text-sm font-medium")
+                ui.tab("transactions", "📝 Сделки").classes("px-6 py-3 text-sm font-medium")
 
                 # Низкий приоритет - дополнительные функции
-                ui.tab("analytics", "📈 Аналитика").classes(
-                    "px-6 py-3 text-sm font-medium"
-                )
+                ui.tab("analytics", "📈 Аналитика").classes("px-6 py-3 text-sm font-medium")
                 ui.tab("alerts", "🔔 Алерты").classes("px-6 py-3 text-sm font-medium")
-
-            # Функции для переключения вкладок
-            def switch_to_tab(tab_name):
-                tabs.value = tab_name
-
-            # Функция для открытия диалога добавления сделки
-            def open_add_dialog():
-                open_add_crypto_dialog()
-
-            # Функция для открытия диалога добавления акций
-            def open_add_stock_dialog():
-                open_add_stock_transaction_dialog()
-
-            # Функция обновления данных
-            def refresh():
-                try:
-                    # Обновляем данные
-                    ui.notify("🔄 Обновление данных...", type="info")
-                    # Здесь можно добавить логику обновления данных
-                    ui.notify("✅ Данные обновлены", type="positive")
-                except Exception as e:
-                    ui.notify(f"❌ Ошибка обновления: {e}", type="negative")
 
             with ui.tab_panels(tabs, value="overview").classes("w-full"):
                 with ui.tab_panel("overview"):
                     # Заголовок вкладки
                     with ui.row().classes("items-center gap-2 mb-4"):
                         ui.icon("dashboard").classes("text-xl text-blue-600")
-                        ui.label("Обзор портфеля").classes(
-                            "text-xl font-bold text-gray-800"
-                        )
+                        ui.label("Обзор портфеля").classes("text-xl font-bold text-gray-800")
 
-                    # Современные карточки со сводкой
-                    with ui.row().classes("gap-6 mb-8"):
-                        with ui.card().classes(
-                            "p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
-                        ):
-                            with ui.column().classes("gap-2"):
-                                with ui.row().classes("items-center gap-2"):
-                                    ui.icon("account_balance").classes(
-                                        "text-2xl text-white/80"
-                                    )
-                                    ui.label("Общая стоимость").classes(
-                                        "text-sm font-semibold text-white/90"
-                                    )
-                                total_value_chip = ui.label("—").classes(
-                                    "text-3xl font-bold text-white drop-shadow-lg"
-                                )
+            # Современные карточки со сводкой
+            with ui.row().classes("gap-6 mb-8"):
+                with ui.card().classes(
+                    "p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                ):
+                    with ui.column().classes("gap-2"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("account_balance").classes("text-2xl text-white/80")
+                            ui.label("Общая стоимость").classes(
+                                "text-sm font-semibold text-white/90"
+                            )
+                        total_value_chip = ui.label("—").classes(
+                            "text-3xl font-bold text-white drop-shadow-lg"
+                        )
 
                 with ui.card().classes(
                     "p-6 bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
@@ -934,48 +852,48 @@ def portfolio_page():
                 .props("dense bordered")
             )
 
-            with ui.tab_panel("positions"):
-                # Заголовок вкладки
-                with ui.row().classes("items-center justify-between mb-4"):
-                    with ui.row().classes("items-center gap-2"):
-                        ui.icon("account_balance").classes("text-xl text-blue-600")
-                        ui.label("Позиции").classes("text-xl font-bold text-gray-800")
+                with ui.tab_panel("positions"):
+                    # Заголовок вкладки
+                    with ui.row().classes("items-center justify-between mb-4"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("account_balance").classes("text-xl text-blue-600")
+                            ui.label("Позиции").classes("text-xl font-bold text-gray-800")
 
-                    with ui.row().classes("gap-2"):
-                        ui.button(
-                            "📥 Экспорт CSV", on_click=lambda: export_pos()
-                        ).props("color=primary icon=download").classes("px-4 py-2")
-                        ui.button("🔄 Обновить", on_click=lambda: refresh()).props(
-                            "outline icon=refresh"
+                        with ui.row().classes("gap-2"):
+                            ui.button("📥 Экспорт CSV", on_click=lambda: export_pos()).props(
+                                "color=primary icon=download"
+                            ).classes("px-4 py-2")
+                            ui.button("🔄 Обновить", on_click=lambda: refresh()).props(
+                                "outline icon=refresh"
+                            ).classes("px-4 py-2")
+
+                    pos_table2 = (
+                        ui.table(columns=pos_cols, rows=[], row_key="key")
+                        .classes("w-full")
+                        .props("dense bordered")
+                    )
+
+                with ui.tab_panel("transactions"):
+                    # Заголовок вкладки
+                    with ui.row().classes("items-center justify-between mb-4"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("receipt_long").classes("text-xl text-blue-600")
+                            ui.label("Сделки").classes("text-xl font-bold text-gray-800")
+
+                        ui.button("📥 Экспорт CSV", on_click=lambda: export_tx()).props(
+                            "color=primary icon=download"
                         ).classes("px-4 py-2")
 
-                pos_table2 = (
-                    ui.table(columns=pos_cols, rows=[], row_key="key")
-                    .classes("w-full")
-                    .props("dense bordered")
-                )
-
-            with ui.tab_panel("transactions"):
-                # Заголовок вкладки
-                with ui.row().classes("items-center justify-between mb-4"):
-                    with ui.row().classes("items-center gap-2"):
-                        ui.icon("receipt_long").classes("text-xl text-blue-600")
-                        ui.label("Сделки").classes("text-xl font-bold text-gray-800")
-
-                    ui.button("📥 Экспорт CSV", on_click=lambda: export_tx()).props(
-                        "color=primary icon=download"
-                    ).classes("px-4 py-2")
-
-                # Улучшенная форма добавления сделки
-                with ui.card().classes(
-                    "w-full mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50"
-                ):
-                    with ui.row().classes("items-center gap-2 mb-4"):
-                        ui.icon("add_circle").classes("text-lg text-blue-600")
-                        ui.label("Добавить новую сделку").classes(
-                            "text-lg font-semibold text-gray-800"
-                        )
-                        ui.badge("Быстрый ввод", color="blue").classes("ml-auto")
+                    # Улучшенная форма добавления сделки
+                    with ui.card().classes(
+                        "w-full mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50"
+                    ):
+                        with ui.row().classes("items-center gap-2 mb-4"):
+                            ui.icon("add_circle").classes("text-lg text-blue-600")
+                            ui.label("Добавить новую сделку").classes(
+                                "text-lg font-semibold text-gray-800"
+                            )
+                            ui.badge("Быстрый ввод", color="blue").classes("ml-auto")
 
                 # Функции для быстрых действий (определяем ДО использования)
                 def set_coin_value(coin_symbol):
@@ -1734,106 +1652,3 @@ def portfolio_page():
 
     # Загружаем данные при инициализации страницы
     refresh()  # Загружаем данные при открытии страницы
-
-
-def open_add_stock_transaction_dialog():
-    """Открывает диалог добавления новой сделки с акциями"""
-    with ui.dialog() as dialog, ui.card().classes("min-w-[600px] max-w-[800px] p-6"):
-        # Заголовок диалога
-        with ui.row().classes("items-center gap-2 mb-4"):
-            ui.icon("trending_up").classes("text-xl text-blue-600")
-            ui.label("Добавить акцию").classes("text-xl font-bold text-gray-800")
-            ui.badge("Акции", color="blue").classes("ml-auto")
-
-        # Форма в две колонки
-        with ui.grid(columns=2).classes("gap-4"):
-            # Левая колонка
-            with ui.column().classes("gap-3"):
-                symbol = (
-                    ui.input("Символ акции", placeholder="AAPL, MSFT, GOOGL...")
-                    .props("uppercase")
-                    .classes("w-full")
-                )
-
-                company_name = ui.input(
-                    "Название компании", placeholder="Apple Inc."
-                ).classes("w-full")
-
-                transaction_type = ui.select(
-                    ["buy", "sell", "dividend", "split", "bonus"],
-                    label="Тип операции",
-                    value="buy",
-                ).classes("w-full")
-
-                quantity = (
-                    ui.input("Количество акций", placeholder="10")
-                    .props("type=number inputmode=decimal")
-                    .classes("w-full")
-                )
-
-            # Правая колонка
-            with ui.column().classes("gap-3"):
-                price_per_share = (
-                    ui.input("Цена за акцию", placeholder="150.00")
-                    .props("type=number inputmode=decimal")
-                    .classes("w-full")
-                )
-
-                commission = (
-                    ui.input("Комиссия", placeholder="0.00")
-                    .props("type=number inputmode=decimal")
-                    .classes("w-full")
-                )
-
-                exchange = ui.select(
-                    ["NASDAQ", "NYSE", "AMEX", "OTC"], label="Биржа", value="NASDAQ"
-                ).classes("w-full")
-
-                currency = ui.select(
-                    ["USD", "EUR", "RUB"], label="Валюта", value="USD"
-                ).classes("w-full")
-
-        # Заметки
-        notes = ui.textarea(
-            "Заметки", placeholder="Дополнительная информация..."
-        ).classes("w-full mt-3")
-
-        # Кнопки действий
-        with ui.row().classes("justify-end gap-3 mt-6"):
-
-            def save_stock_transaction():
-                try:
-                    from decimal import Decimal
-
-                    from app.models.stock_models import StockTransactionIn
-                    from app.services.stock_service import StockService
-
-                    service = StockService()
-
-                    transaction = StockTransactionIn(
-                        symbol=symbol.value or "",
-                        company_name=company_name.value or "",
-                        transaction_type=transaction_type.value,
-                        quantity=Decimal(quantity.value or 0),
-                        price_per_share=Decimal(price_per_share.value or 0),
-                        commission=Decimal(commission.value or 0),
-                        exchange=exchange.value,
-                        currency=currency.value,
-                        notes=notes.value or "",
-                    )
-
-                    service.add_stock_transaction(transaction)
-                    ui.notify("✅ Акция успешно добавлена", type="positive")
-                    dialog.close()
-
-                except Exception as e:
-                    ui.notify(f"❌ Ошибка: {e}", type="negative")
-
-            ui.button("Отмена", icon="close").classes("px-4 py-2").on(
-                "click", dialog.close
-            )
-            ui.button("Добавить акцию", icon="add", color="primary").classes(
-                "px-4 py-2"
-            ).on("click", save_stock_transaction)
-
-    dialog.open()

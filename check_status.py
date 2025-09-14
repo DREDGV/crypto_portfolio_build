@@ -1,57 +1,77 @@
 #!/usr/bin/env python3
-"""
-Быстрая проверка статуса приложения
-"""
+"""Проверка статуса приложения без подтверждений"""
 
-import socket
 import subprocess
 import sys
+import time
+
+import requests
 
 
-def check_port(port=8080):
-    """Проверяет, занят ли порт"""
+def check_status():
+    """Проверяет статус приложения"""
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(1)
-            result = s.connect_ex(("127.0.0.1", port))
-            return result == 0
-    except:
+        response = requests.get("http://127.0.0.1:8080", timeout=2)
+        if response.status_code == 200:
+            print("✅ Приложение работает на http://127.0.0.1:8080")
+            return True
+        else:
+            print(f"⚠️ Приложение отвечает с кодом {response.status_code}")
+            return False
+    except requests.exceptions.ConnectionError:
+        print("❌ Приложение не запущено")
+        return False
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
         return False
 
 
-def check_python_processes():
-    """Проверяет запущенные Python процессы"""
+def kill_existing_processes():
+    """Завершает существующие процессы на порту 8080"""
     try:
+        # Находим процессы на порту 8080
         result = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq python.exe"],
-            capture_output=True,
-            text=True,
+            ["netstat", "-ano"], capture_output=True, text=True, timeout=10
         )
-        return "python.exe" in result.stdout
-    except:
-        return False
+
+        lines = result.stdout.split("\n")
+        pids = []
+
+        for line in lines:
+            if ":8080" in line and "LISTENING" in line:
+                parts = line.split()
+                if len(parts) > 4:
+                    pid = parts[-1]
+                    pids.append(pid)
+
+        # Завершаем процессы
+        for pid in pids:
+            try:
+                subprocess.run(
+                    ["taskkill", "/PID", pid, "/F"], capture_output=True, timeout=5
+                )
+                print(f"🔄 Завершен процесс {pid}")
+            except:
+                pass
+
+    except Exception as e:
+        print(f"⚠️ Не удалось завершить процессы: {e}")
 
 
 def main():
-    """Основная функция проверки"""
-    print("🔍 ПРОВЕРКА СТАТУСА ПРИЛОЖЕНИЯ")
-    print("=" * 40)
+    print("🔍 Проверка статуса приложения...")
 
-    # Проверяем порт
-    port_status = check_port(8080)
-    print(f"🌐 Порт 8080: {'✅ Занят' if port_status else '❌ Свободен'}")
-
-    # Проверяем Python процессы
-    python_running = check_python_processes()
-    print(f"🐍 Python процессы: {'✅ Запущены' if python_running else '❌ Не найдены'}")
-
-    # Общий статус
-    if port_status:
-        print("\n✅ Приложение работает!")
-        print("🌐 Откройте: http://127.0.0.1:8080")
+    if check_status():
+        print("✅ Все готово!")
     else:
-        print("\n❌ Приложение не запущено")
-        print("🚀 Запустите: python quick_start.py")
+        print("🔄 Попытка освободить порт...")
+        kill_existing_processes()
+        time.sleep(2)
+
+        if check_status():
+            print("✅ Порт освобожден!")
+        else:
+            print("❌ Требуется перезапуск приложения")
 
 
 if __name__ == "__main__":
