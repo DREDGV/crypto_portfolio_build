@@ -227,12 +227,13 @@ def show_about_page():
                         ui.html(
                             f"""
                         <style>
-                        .about-content h1 {{ font-size: 1.2rem !important; font-weight: 600 !important; margin: 0.5rem 0 !important; }}
-                        .about-content h2 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.4rem 0 !important; }}
-                        .about-content h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.3rem 0 !important; }}
-                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
+                        .about-content h1 {{ font-size: 1.5rem !important; font-weight: 700 !important; margin: 1rem 0 0.5rem 0 !important; color: #1f2937 !important; }}
+                        .about-content h2 {{ font-size: 1.3rem !important; font-weight: 600 !important; margin: 0.8rem 0 0.4rem 0 !important; color: #374151 !important; }}
+                        .about-content h3 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.6rem 0 0.3rem 0 !important; color: #4b5563 !important; }}
+                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; line-height: 1.5 !important; }}
                         .about-content ul {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
-                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; }}
+                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; line-height: 1.4 !important; }}
+                        .about-content strong {{ font-weight: 600 !important; }}
                         </style>
                         <div class="about-content">
                         {app_info["changelog"]}
@@ -247,12 +248,13 @@ def show_about_page():
                         ui.html(
                             f"""
                         <style>
-                        .about-content h1 {{ font-size: 1.2rem !important; font-weight: 600 !important; margin: 0.5rem 0 !important; }}
-                        .about-content h2 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.4rem 0 !important; }}
-                        .about-content h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.3rem 0 !important; }}
-                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
+                        .about-content h1 {{ font-size: 1.5rem !important; font-weight: 700 !important; margin: 1rem 0 0.5rem 0 !important; color: #1f2937 !important; }}
+                        .about-content h2 {{ font-size: 1.3rem !important; font-weight: 600 !important; margin: 0.8rem 0 0.4rem 0 !important; color: #374151 !important; }}
+                        .about-content h3 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.6rem 0 0.3rem 0 !important; color: #4b5563 !important; }}
+                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; line-height: 1.5 !important; }}
                         .about-content ul {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
-                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; }}
+                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; line-height: 1.4 !important; }}
+                        .about-content strong {{ font-weight: 600 !important; }}
                         </style>
                         <div class="about-content">
                         {app_info["concept"]}
@@ -267,12 +269,13 @@ def show_about_page():
                         ui.html(
                             f"""
                         <style>
-                        .about-content h1 {{ font-size: 1.2rem !important; font-weight: 600 !important; margin: 0.5rem 0 !important; }}
-                        .about-content h2 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.4rem 0 !important; }}
-                        .about-content h3 {{ font-size: 1rem !important; font-weight: 600 !important; margin: 0.3rem 0 !important; }}
-                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
+                        .about-content h1 {{ font-size: 1.5rem !important; font-weight: 700 !important; margin: 1rem 0 0.5rem 0 !important; color: #1f2937 !important; }}
+                        .about-content h2 {{ font-size: 1.3rem !important; font-weight: 600 !important; margin: 0.8rem 0 0.4rem 0 !important; color: #374151 !important; }}
+                        .about-content h3 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.6rem 0 0.3rem 0 !important; color: #4b5563 !important; }}
+                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; line-height: 1.5 !important; }}
                         .about-content ul {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
-                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; }}
+                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; line-height: 1.4 !important; }}
+                        .about-content strong {{ font-weight: 600 !important; }}
                         </style>
                         <div class="about-content">
                         {app_info["tasks"]}
