@@ -1,7 +1,9 @@
-from typing import Optional
-from sqlmodel import SQLModel, Field
-from pydantic import BaseModel
 from datetime import datetime, timezone
+from typing import Optional
+
+from pydantic import BaseModel
+from sqlmodel import Field, SQLModel
+
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -13,6 +15,7 @@ class Transaction(SQLModel, table=True):
     strategy: str  # long/mid/short/scalp
     source: Optional[str] = None
     notes: Optional[str] = None
+
 
 class TransactionIn(BaseModel):
     coin: str
