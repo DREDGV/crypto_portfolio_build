@@ -298,64 +298,101 @@ def portfolio_page():
     # Импортируем модуль версий
     from app.core.version import get_app_info
 
-    # Заголовок с иконкой и версией
-    with ui.row().classes("items-center justify-between mb-6"):
-        with ui.row().classes("items-center gap-3"):
-            ui.icon("account_balance_wallet").classes("text-3xl text-blue-600")
-            ui.label("Crypto Portfolio Manager").classes(
-                "text-3xl font-bold text-gray-800"
-            )
-            ui.badge(f"v{get_app_info()['version']}", color="blue").classes("text-sm")
+    # Современная шапка с градиентом
+    with ui.card().classes(
+        "p-6 mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-lg"
+    ):
+        with ui.row().classes("items-center justify-between"):
+            with ui.row().classes("items-center gap-4"):
+                ui.icon("account_balance_wallet").classes(
+                    "text-4xl text-white drop-shadow-lg"
+                )
+                with ui.column().classes("gap-1"):
+                    ui.label("Crypto Portfolio Manager").classes(
+                        "text-3xl font-bold text-white drop-shadow-lg"
+                    )
+                    ui.label("Управление криптовалютным портфелем").classes(
+                        "text-sm text-blue-100"
+                    )
+                ui.badge(f"v{get_app_info()['version']}", color="white").classes(
+                    "text-xs bg-white/20 text-white border-white/30"
+                )
 
-        # Кнопки управления
-        with ui.row().classes("gap-2"):
-            refresh_button = (
-                ui.button("🔄 Обновить данные", icon="refresh")
-                .classes("bg-green-100 text-green-700 hover:bg-green-200")
-                .on("click", lambda: refresh())
-            )
+            # Кнопки управления с современным дизайном
+            with ui.row().classes("gap-3"):
+                refresh_button = (
+                    ui.button("Обновить данные", icon="refresh")
+                    .classes(
+                        "bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm transition-all duration-200"
+                    )
+                    .on("click", lambda: refresh())
+                )
 
-            ui.button("О программе", icon="info").classes(
-                "bg-blue-100 text-blue-700 hover:bg-blue-200"
-            ).on("click", lambda: ui.navigate.to("/about"))
+                ui.button("О программе", icon="info").classes(
+                    "bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm transition-all duration-200"
+                ).on("click", lambda: ui.navigate.to("/about"))
 
-    # Карточка с фильтрами
-    with ui.card().classes("p-4 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50"):
-        ui.label("Фильтры").classes("text-lg font-semibold mb-3 text-gray-700")
-        with ui.row().classes("gap-4 items-end"):
-            with ui.column().classes("gap-1"):
-                ui.label("Монета").classes("text-sm font-medium text-gray-600")
+    # Современная карточка с фильтрами
+    with ui.card().classes("p-6 mb-6 bg-white shadow-lg border border-gray-200"):
+        with ui.row().classes("items-center gap-2 mb-4"):
+            ui.icon("filter_list").classes("text-xl text-blue-600")
+            ui.label("Фильтры и поиск").classes("text-xl font-bold text-gray-800")
+
+        with ui.row().classes("gap-6 items-end"):
+            with ui.column().classes("gap-2"):
+                ui.label("Монета").classes("text-sm font-semibold text-gray-700")
                 coin_filter = (
                     ui.input(placeholder="BTC, ETH, SOL...")
                     .props(
                         "uppercase autocomplete=off autocorrect=off autocapitalize=off spellcheck=false"
                     )
-                    .classes("w-48")
+                    .classes("w-48 h-10")
                 )
 
-            with ui.column().classes("gap-1"):
-                ui.label("Стратегия").classes("text-sm font-medium text-gray-600")
+            with ui.column().classes("gap-2"):
+                ui.label("Стратегия").classes("text-sm font-semibold text-gray-700")
                 strat_filter = ui.select(["(все)"] + STRATS, value="(все)").classes(
-                    "w-32"
+                    "w-40 h-10"
                 )
+
+            with ui.column().classes("gap-2"):
+                ui.label("Тип операции").classes("text-sm font-semibold text-gray-700")
+                type_filter = ui.select(["(все)"] + TYPES, value="(все)").classes(
+                    "w-40 h-10"
+                )
+
+            with ui.column().classes("gap-2"):
+                ui.label("Период").classes("text-sm font-semibold text-gray-700")
+                period_filter = ui.select(
+                    ["(все)", "Сегодня", "Неделя", "Месяц", "3 месяца", "Год"],
+                    value="(все)",
+                ).classes("w-32 h-10")
 
         def reset_filters():
             coin_filter.value = ""
             strat_filter.value = "(все)"
+            type_filter.value = "(все)"
+            period_filter.value = "(все)"
             refresh()
 
-            ui.button("Сбросить", on_click=reset_filters).props("outline").classes(
-                "px-4 py-2"
+        with ui.row().classes("justify-end gap-3 mt-4"):
+            ui.button("Сбросить фильтры", icon="clear", on_click=reset_filters).classes(
+                "bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all duration-200"
             )
+            ui.button("Применить", icon="search").classes(
+                "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+            ).on("click", lambda: refresh())
 
-    # Вкладки с иконками
-    tabs = ui.tabs().classes("mb-4")
+    # Современные вкладки с иконками
+    tabs = ui.tabs().classes(
+        "mb-6 bg-white rounded-lg shadow-sm border border-gray-200"
+    )
     with tabs:
-        ui.tab("overview", "📊 Обзор")
-        ui.tab("positions", "💼 Позиции")
-        ui.tab("transactions", "📝 Сделки")
-        ui.tab("alerts", "🔔 Алерты")
-        ui.tab("analytics", "📈 Аналитика")
+        ui.tab("overview", "📊 Обзор").classes("px-6 py-3 text-sm font-medium")
+        ui.tab("positions", "💼 Позиции").classes("px-6 py-3 text-sm font-medium")
+        ui.tab("transactions", "📝 Сделки").classes("px-6 py-3 text-sm font-medium")
+        ui.tab("alerts", "🔔 Алерты").classes("px-6 py-3 text-sm font-medium")
+        ui.tab("analytics", "📈 Аналитика").classes("px-6 py-3 text-sm font-medium")
 
     with ui.tab_panels(tabs, value="overview").classes("w-full"):
         with ui.tab_panel("overview"):
@@ -364,49 +401,61 @@ def portfolio_page():
                 ui.icon("dashboard").classes("text-xl text-blue-600")
                 ui.label("Обзор портфеля").classes("text-xl font-bold text-gray-800")
 
-            # Карточки со сводкой
-            with ui.row().classes("gap-4 mb-6"):
+            # Современные карточки со сводкой
+            with ui.row().classes("gap-6 mb-8"):
                 with ui.card().classes(
-                    "p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500"
-                ):
-                    with ui.column().classes("gap-1"):
-                        ui.label("Общая стоимость").classes(
-                            "text-sm font-medium text-gray-600"
-                        )
-                        total_value_chip = ui.label("—").classes(
-                            "text-2xl font-bold text-green-700"
-                        )
-
-                with ui.card().classes(
-                    "p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500"
-                ):
-                    with ui.column().classes("gap-1"):
-                        ui.label("Нереализованный PnL").classes(
-                            "text-sm font-medium text-gray-600"
-                        )
-                        total_unreal_chip = ui.label("—").classes("text-2xl font-bold")
-
-                with ui.card().classes(
-                    "p-4 bg-gradient-to-r from-purple-50 to-violet-50 border-l-4 border-purple-500"
-                ):
-                    with ui.column().classes("gap-1"):
-                        ui.label("Реализованный PnL").classes(
-                            "text-sm font-medium text-gray-600"
-                        )
-                        total_real_chip = ui.label("—").classes("text-2xl font-bold")
-
-            # Дополнительная аналитика
-            with ui.grid(columns=3).classes("gap-4 mb-6"):
-                # Статистика по монетам
-                with ui.card().classes(
-                    "p-4 bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-500"
+                    "p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
                 ):
                     with ui.column().classes("gap-2"):
-                        ui.label("📊 Статистика").classes(
-                            "text-sm font-medium text-gray-600"
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("account_balance").classes("text-2xl text-white/80")
+                            ui.label("Общая стоимость").classes(
+                                "text-sm font-semibold text-white/90"
+                            )
+                        total_value_chip = ui.label("—").classes(
+                            "text-3xl font-bold text-white drop-shadow-lg"
                         )
+
+                with ui.card().classes(
+                    "p-6 bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                ):
+                    with ui.column().classes("gap-2"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("trending_up").classes("text-2xl text-white/80")
+                            ui.label("Нереализованный PnL").classes(
+                                "text-sm font-semibold text-white/90"
+                            )
+                        total_unreal_chip = ui.label("—").classes(
+                            "text-3xl font-bold text-white drop-shadow-lg"
+                        )
+
+                with ui.card().classes(
+                    "p-6 bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                ):
+                    with ui.column().classes("gap-2"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("monetization_on").classes("text-2xl text-white/80")
+                            ui.label("Реализованный PnL").classes(
+                                "text-sm font-semibold text-white/90"
+                            )
+                        total_real_chip = ui.label("—").classes(
+                            "text-3xl font-bold text-white drop-shadow-lg"
+                        )
+
+            # Дополнительная аналитика с современным дизайном
+            with ui.grid(columns=3).classes("gap-6 mb-8"):
+                # Статистика по монетам
+                with ui.card().classes(
+                    "p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200"
+                ):
+                    with ui.column().classes("gap-3"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("analytics").classes("text-xl text-orange-500")
+                            ui.label("Статистика").classes(
+                                "text-lg font-bold text-gray-800"
+                            )
                         coins_count_chip = ui.label("—").classes(
-                            "text-lg font-bold text-orange-700"
+                            "text-2xl font-bold text-orange-600"
                         )
                         positions_count_chip = ui.label("—").classes(
                             "text-sm text-gray-600"
@@ -414,40 +463,44 @@ def portfolio_page():
 
                 # Топ монета
                 with ui.card().classes(
-                    "p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-500"
+                    "p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200"
                 ):
-                    with ui.column().classes("gap-2"):
-                        ui.label("🏆 Топ позиция").classes(
-                            "text-sm font-medium text-gray-600"
-                        )
+                    with ui.column().classes("gap-3"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("emoji_events").classes("text-xl text-indigo-500")
+                            ui.label("Топ позиция").classes(
+                                "text-lg font-bold text-gray-800"
+                            )
                         top_coin_chip = ui.label("—").classes(
-                            "text-lg font-bold text-indigo-700"
+                            "text-2xl font-bold text-indigo-600"
                         )
                         top_pnl_chip = ui.label("—").classes("text-sm text-gray-600")
 
                 # Активность
                 with ui.card().classes(
-                    "p-4 bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500"
+                    "p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200"
                 ):
-                    with ui.column().classes("gap-2"):
-                        ui.label("⚡ Активность").classes(
-                            "text-sm font-medium text-gray-600"
-                        )
+                    with ui.column().classes("gap-3"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.icon("flash_on").classes("text-xl text-teal-500")
+                            ui.label("Активность").classes(
+                                "text-lg font-bold text-gray-800"
+                            )
                         transactions_count_chip = ui.label("—").classes(
-                            "text-lg font-bold text-teal-700"
+                            "text-2xl font-bold text-teal-600"
                         )
                         strategies_count_chip = ui.label("—").classes(
                             "text-sm text-gray-600"
                         )
 
-            # Детальная аналитика
-            with ui.grid(columns=2).classes("gap-6 mb-6"):
+            # Детальная аналитика с современным дизайном
+            with ui.grid(columns=2).classes("gap-6 mb-8"):
                 # Статистика по монетам
-                with ui.card().classes("p-4"):
-                    with ui.row().classes("items-center gap-2 mb-3"):
-                        ui.icon("currency_exchange").classes("text-lg text-blue-600")
+                with ui.card().classes("p-6 bg-white shadow-lg border border-gray-200"):
+                    with ui.row().classes("items-center gap-3 mb-4"):
+                        ui.icon("currency_exchange").classes("text-xl text-blue-600")
                         ui.label("Распределение по монетам").classes(
-                            "text-lg font-semibold text-gray-700"
+                            "text-xl font-bold text-gray-800"
                         )
                     coins_table = (
                         ui.table(
@@ -487,11 +540,11 @@ def portfolio_page():
                     )
 
                 # Статистика по стратегиям
-                with ui.card().classes("p-4"):
-                    with ui.row().classes("items-center gap-2 mb-3"):
-                        ui.icon("trending_up").classes("text-lg text-green-600")
+                with ui.card().classes("p-6 bg-white shadow-lg border border-gray-200"):
+                    with ui.row().classes("items-center gap-3 mb-4"):
+                        ui.icon("trending_up").classes("text-xl text-green-600")
                         ui.label("Распределение по стратегиям").classes(
-                            "text-lg font-semibold text-gray-700"
+                            "text-xl font-bold text-gray-800"
                         )
                     strategies_table = (
                         ui.table(
