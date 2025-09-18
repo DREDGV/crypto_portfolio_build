@@ -459,3 +459,203 @@ def check_alerts() -> list:
 def get_alert_history() -> list:
     """Возвращает историю срабатываний алертов"""
     return sorted(_alert_history, key=lambda x: x["triggered_at"], reverse=True)
+
+
+# ===== УПРАВЛЕНИЕ ИСТОЧНИКАМИ =====
+
+# Глобальный словарь для хранения пользовательских названий источников
+_custom_source_names = {}
+
+# Глобальный словарь для хранения порядка источников
+_source_order = {}
+
+# Множество скрытых источников (удаленных пользователем)
+_hidden_sources = set()
+
+def get_sources_with_frequency() -> list[tuple[str, int]]:
+    """Получает источники с частотой использования"""
+    try:
+        with Session(engine) as session:
+            # Получаем все источники из транзакций
+            statement = select(Transaction.source).where(Transaction.source.isnot(None))
+            sources = session.exec(statement).all()
+            
+            # Подсчитываем частоту
+            source_counts = {}
+            for source in sources:
+                if source and source.strip():
+                    source_counts[source.strip()] = source_counts.get(source.strip(), 0) + 1
+            
+            # Базовые популярные биржи
+            popular_sources = [
+                "Binance", "Coinbase", "Kraken", "OKX", "Bybit", "KuCoin", "Huobi", "Gate.io"
+            ]
+            
+            # Применяем пользовательские названия и скрываем удаленные
+            for original_name in popular_sources:
+                # Пропускаем скрытые источники
+                if original_name in _hidden_sources:
+                    print(f"DEBUG: Пропускаем скрытый источник: {original_name}")
+                    continue
+                    
+                custom_name = _custom_source_names.get(original_name, original_name)
+                if custom_name not in source_counts:
+                    source_counts[custom_name] = 0
+            
+            # Сортируем по частоте использования, затем по пользовательскому порядку
+            def sort_key(item):
+                name, frequency = item
+                # Сначала по частоте (по убыванию)
+                freq_priority = -frequency
+                # Затем по пользовательскому порядку
+                order_priority = _source_order.get(name, 999)
+                return (freq_priority, order_priority)
+            
+            sorted_sources = sorted(source_counts.items(), key=sort_key)
+            
+            return sorted_sources
+    except Exception as e:
+        print(f"Ошибка получения источников: {e}")
+        return [("Binance", 0), ("Coinbase", 0), ("Kraken", 0), ("OKX", 0), ("Bybit", 0), ("KuCoin", 0), ("Huobi", 0), ("Gate.io", 0)]
+
+
+def update_source_name(old_name: str, new_name: str) -> bool:
+    """Обновляет название источника во всех транзакциях и в пользовательских названиях"""
+    try:
+        # Обновляем пользовательское название
+        _custom_source_names[old_name] = new_name
+        print(f"DEBUG: Обновлено пользовательское название: {old_name} -> {new_name}")
+        
+        with Session(engine) as session:
+            # Находим все транзакции с старым названием источника
+            statement = select(Transaction).where(Transaction.source == old_name)
+            transactions = session.exec(statement).all()
+            
+            print(f"DEBUG: Найдено {len(transactions)} транзакций с источником '{old_name}'")
+            
+            # Обновляем название источника в транзакциях
+            for tx in transactions:
+                print(f"DEBUG: Обновляем транзакцию {tx.id}: {old_name} -> {new_name}")
+                tx.source = new_name
+            
+            session.commit()
+            print(f"DEBUG: Успешно обновлено {len(transactions)} транзакций")
+            return True
+    except Exception as e:
+        print(f"Ошибка обновления источника: {e}")
+        return False
+
+
+def delete_source_from_transactions(source_name: str) -> bool:
+    """Удаляет источник из всех транзакций и скрывает его"""
+    try:
+        # Находим оригинальное название источника
+        original_name = source_name
+        for orig, custom in _custom_source_names.items():
+            if custom == source_name:
+                original_name = orig
+                break
+        
+        # Добавляем в скрытые источники
+        _hidden_sources.add(original_name)
+        print(f"DEBUG: Источник '{source_name}' (оригинал: '{original_name}') добавлен в скрытые")
+        
+        # Удаляем из пользовательских названий
+        if source_name in _custom_source_names:
+            del _custom_source_names[source_name]
+            print(f"DEBUG: Удалено пользовательское название: {source_name}")
+        
+        with Session(engine) as session:
+            # Находим все транзакции с указанным источником
+            statement = select(Transaction).where(Transaction.source == source_name)
+            transactions = session.exec(statement).all()
+            
+            print(f"DEBUG: Найдено {len(transactions)} транзакций с источником '{source_name}' для удаления")
+            
+            # Удаляем источник (устанавливаем в None)
+            for tx in transactions:
+                print(f"DEBUG: Удаляем источник из транзакции {tx.id}")
+                tx.source = None
+            
+            session.commit()
+            print(f"DEBUG: Успешно удален источник из {len(transactions)} транзакций")
+            return True
+    except Exception as e:
+        print(f"Ошибка удаления источника: {e}")
+        return False
+
+
+def move_source_up(source_name: str) -> bool:
+    """Перемещает источник вверх в списке"""
+    try:
+        sources = get_sources_with_frequency()
+        current_index = None
+        
+        # Находим текущий индекс источника
+        for i, (name, freq) in enumerate(sources):
+            if name == source_name:
+                current_index = i
+                break
+        
+        if current_index is None or current_index == 0:
+            print(f"DEBUG: Источник '{source_name}' не найден или уже вверху")
+            return False
+        
+        # Меняем порядок
+        prev_source = sources[current_index - 1][0]
+        _source_order[source_name] = current_index - 1
+        _source_order[prev_source] = current_index
+        
+        print(f"DEBUG: Источник '{source_name}' перемещен вверх")
+        return True
+    except Exception as e:
+        print(f"Ошибка перемещения источника вверх: {e}")
+        return False
+
+def move_source_down(source_name: str) -> bool:
+    """Перемещает источник вниз в списке"""
+    try:
+        sources = get_sources_with_frequency()
+        current_index = None
+        
+        # Находим текущий индекс источника
+        for i, (name, freq) in enumerate(sources):
+            if name == source_name:
+                current_index = i
+                break
+        
+        if current_index is None or current_index == len(sources) - 1:
+            print(f"DEBUG: Источник '{source_name}' не найден или уже внизу")
+            return False
+        
+        # Меняем порядок
+        next_source = sources[current_index + 1][0]
+        _source_order[source_name] = current_index + 1
+        _source_order[next_source] = current_index
+        
+        print(f"DEBUG: Источник '{source_name}' перемещен вниз")
+        return True
+    except Exception as e:
+        print(f"Ошибка перемещения источника вниз: {e}")
+        return False
+
+def get_source_statistics() -> dict:
+    """Возвращает статистику по источникам"""
+    try:
+        sources_with_freq = get_sources_with_frequency()
+        total_transactions = sum(freq for _, freq in sources_with_freq)
+        
+        return {
+            "total_transactions": total_transactions,
+            "unique_sources": len(sources_with_freq),
+            "sources_with_frequency": sources_with_freq,
+            "top_sources": sources_with_freq[:10]  # Топ-10
+        }
+    except Exception as e:
+        print(f"Ошибка получения статистики источников: {e}")
+        return {
+            "total_transactions": 0,
+            "unique_sources": 0,
+            "sources_with_frequency": [],
+            "top_sources": []
+        }
