@@ -1,4 +1,9 @@
 import os
+"""
+ARCHIVED BACKUP: Этот файл оставлен как резервная копия старых страниц.
+Актуальный UI для ввода сделок и источников: app/ui/pages_step2.py
+Дата архивации: 2025-09-22
+"""
 
 from nicegui import ui
 

@@ -7,7 +7,7 @@ from collections import defaultdict, deque
 from sqlmodel import Session, select
 
 from app.adapters.prices import get_current_price
-from app.core.models import Transaction, TransactionIn
+from app.core.models import Transaction, TransactionIn, SourceMeta
 from app.storage.db import DB_PATH, engine
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
@@ -463,14 +463,20 @@ def get_alert_history() -> list:
 
 # ===== УПРАВЛЕНИЕ ИСТОЧНИКАМИ =====
 
-# Глобальный словарь для хранения пользовательских названий источников
-_custom_source_names = {}
+POPULAR_SOURCES = [
+    "Binance",
+    "Coinbase",
+    "Kraken",
+    "OKX",
+    "Bybit",
+    "KuCoin",
+    "Huobi",
+    "Gate.io",
+]
 
-# Глобальный словарь для хранения порядка источников
-_source_order = {}
-
-# Множество скрытых источников (удаленных пользователем)
-_hidden_sources = set()
+def _get_source_meta_map(session: Session) -> dict[str, SourceMeta]:
+    metas = session.exec(select(SourceMeta)).all()
+    return {m.original_name: m for m in metas}
 
 def get_sources_with_frequency() -> list[tuple[str, int]]:
     """Получает источники с частотой использования"""
@@ -486,19 +492,13 @@ def get_sources_with_frequency() -> list[tuple[str, int]]:
                 if source and source.strip():
                     source_counts[source.strip()] = source_counts.get(source.strip(), 0) + 1
             
-            # Базовые популярные биржи
-            popular_sources = [
-                "Binance", "Coinbase", "Kraken", "OKX", "Bybit", "KuCoin", "Huobi", "Gate.io"
-            ]
-            
-            # Применяем пользовательские названия и скрываем удаленные
-            for original_name in popular_sources:
-                # Пропускаем скрытые источники
-                if original_name in _hidden_sources:
-                    print(f"DEBUG: Пропускаем скрытый источник: {original_name}")
+            # Применяем пользовательские названия и скрытые из таблицы SourceMeta
+            meta_map = _get_source_meta_map(session)
+            for original_name in POPULAR_SOURCES:
+                meta = meta_map.get(original_name)
+                if meta and meta.hidden:
                     continue
-                    
-                custom_name = _custom_source_names.get(original_name, original_name)
+                custom_name = (meta.custom_name if meta and meta.custom_name else original_name)
                 if custom_name not in source_counts:
                     source_counts[custom_name] = 0
             
@@ -507,8 +507,13 @@ def get_sources_with_frequency() -> list[tuple[str, int]]:
                 name, frequency = item
                 # Сначала по частоте (по убыванию)
                 freq_priority = -frequency
-                # Затем по пользовательскому порядку
-                order_priority = _source_order.get(name, 999)
+                # Затем по пользовательскому порядку из метаданных
+                order_priority = 999
+                # Поиск order_index по custom_name или original_name
+                for meta in meta_map.values():
+                    if (meta.custom_name or meta.original_name) == name:
+                        order_priority = meta.order_index if meta.order_index is not None else 999
+                        break
                 return (freq_priority, order_priority)
             
             sorted_sources = sorted(source_counts.items(), key=sort_key)
@@ -522,11 +527,14 @@ def get_sources_with_frequency() -> list[tuple[str, int]]:
 def update_source_name(old_name: str, new_name: str) -> bool:
     """Обновляет название источника во всех транзакциях и в пользовательских названиях"""
     try:
-        # Обновляем пользовательское название
-        _custom_source_names[old_name] = new_name
-        print(f"DEBUG: Обновлено пользовательское название: {old_name} -> {new_name}")
-        
         with Session(engine) as session:
+            # Обновляем/создаем метаданные
+            meta = session.exec(select(SourceMeta).where(SourceMeta.original_name == old_name)).first()
+            if not meta:
+                meta = SourceMeta(original_name=old_name)
+            meta.custom_name = new_name
+            meta.updated_at = dt.datetime.now()
+            session.add(meta)
             # Находим все транзакции с старым названием источника
             statement = select(Transaction).where(Transaction.source == old_name)
             transactions = session.exec(statement).all()
@@ -549,23 +557,21 @@ def update_source_name(old_name: str, new_name: str) -> bool:
 def delete_source_from_transactions(source_name: str) -> bool:
     """Удаляет источник из всех транзакций и скрывает его"""
     try:
-        # Находим оригинальное название источника
-        original_name = source_name
-        for orig, custom in _custom_source_names.items():
-            if custom == source_name:
-                original_name = orig
-                break
-        
-        # Добавляем в скрытые источники
-        _hidden_sources.add(original_name)
-        print(f"DEBUG: Источник '{source_name}' (оригинал: '{original_name}') добавлен в скрытые")
-        
-        # Удаляем из пользовательских названий
-        if source_name in _custom_source_names:
-            del _custom_source_names[source_name]
-            print(f"DEBUG: Удалено пользовательское название: {source_name}")
-        
         with Session(engine) as session:
+            # Определяем original_name через метаданные
+            original_name = source_name
+            meta_by_custom = session.exec(
+                select(SourceMeta).where(SourceMeta.custom_name == source_name)
+            ).first()
+            if meta_by_custom:
+                original_name = meta_by_custom.original_name
+            # Обновляем/создаем метаданные и скрываем
+            meta = session.exec(select(SourceMeta).where(SourceMeta.original_name == original_name)).first()
+            if not meta:
+                meta = SourceMeta(original_name=original_name)
+            meta.hidden = True
+            meta.updated_at = dt.datetime.now()
+            session.add(meta)
             # Находим все транзакции с указанным источником
             statement = select(Transaction).where(Transaction.source == source_name)
             transactions = session.exec(statement).all()
@@ -601,10 +607,19 @@ def move_source_up(source_name: str) -> bool:
             print(f"DEBUG: Источник '{source_name}' не найден или уже вверху")
             return False
         
-        # Меняем порядок
-        prev_source = sources[current_index - 1][0]
-        _source_order[source_name] = current_index - 1
-        _source_order[prev_source] = current_index
+        # Меняем порядок в метаданных
+        with Session(engine) as session:
+            # Присваиваем индексы текущему и соседу
+            prev_source = sources[current_index - 1][0]
+            for name, idx in [(source_name, current_index - 1), (prev_source, current_index)]:
+                # Ищем мету по original_name или custom_name
+                meta = session.exec(select(SourceMeta).where((SourceMeta.custom_name == name) | (SourceMeta.original_name == name))).first()
+                if not meta:
+                    meta = SourceMeta(original_name=name if name in POPULAR_SOURCES else name, custom_name=None)
+                meta.order_index = idx
+                meta.updated_at = dt.datetime.now()
+                session.add(meta)
+            session.commit()
         
         print(f"DEBUG: Источник '{source_name}' перемещен вверх")
         return True
@@ -628,10 +643,17 @@ def move_source_down(source_name: str) -> bool:
             print(f"DEBUG: Источник '{source_name}' не найден или уже внизу")
             return False
         
-        # Меняем порядок
-        next_source = sources[current_index + 1][0]
-        _source_order[source_name] = current_index + 1
-        _source_order[next_source] = current_index
+        # Меняем порядок в метаданных
+        with Session(engine) as session:
+            next_source = sources[current_index + 1][0]
+            for name, idx in [(source_name, current_index + 1), (next_source, current_index)]:
+                meta = session.exec(select(SourceMeta).where((SourceMeta.custom_name == name) | (SourceMeta.original_name == name))).first()
+                if not meta:
+                    meta = SourceMeta(original_name=name if name in POPULAR_SOURCES else name, custom_name=None)
+                meta.order_index = idx
+                meta.updated_at = dt.datetime.now()
+                session.add(meta)
+            session.commit()
         
         print(f"DEBUG: Источник '{source_name}' перемещен вниз")
         return True

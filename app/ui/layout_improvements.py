@@ -1,5 +1,9 @@
 """
 Улучшения макета и структуры UI для Crypto Portfolio Manager
+
+ARCHIVED UI helper: больше не используется активной версией UI.
+Актуальный UI: app/ui/pages_step2.py
+Дата архивации: 2025-09-22
 """
 
 from nicegui import ui

@@ -168,8 +168,7 @@ def open_enhanced_add_dialog():
                         # Принудительно обновляем список
                         print("DEBUG: Вызываем refresh_sources_list() после успешного сохранения")
                         refresh_sources_list()
-                        # Принудительное обновление через JavaScript
-                        ui.run_javascript("setTimeout(() => { location.reload(); }, 500);")
+                        # Без принудительного перезагруза страницы: UI обновится через refresh_sources_list()
                     else:
                         ui.notify("Ошибка переименования", type="negative")
                 
@@ -191,8 +190,7 @@ def open_enhanced_add_dialog():
                         ui.notify(f"Источник '{source_name}' удален", type="positive")
                         delete_dialog.close()
                         refresh_sources_list()
-                        # Принудительное обновление через JavaScript
-                        ui.run_javascript("setTimeout(() => { location.reload(); }, 500);")
+                        # Без перезагрузки страницы
                     else:
                         ui.notify("Ошибка удаления", type="negative")
                 
@@ -209,8 +207,7 @@ def open_enhanced_add_dialog():
             if success:
                 ui.notify(f"Источник '{source_name}' перемещен вверх", type="positive")
                 refresh_sources_list()
-                # Принудительное обновление через JavaScript
-                ui.run_javascript("setTimeout(() => { location.reload(); }, 300);")
+                # Без перезагрузки: список обновлен выше
             else:
                 ui.notify(f"Не удалось переместить '{source_name}' вверх", type="negative")
 
@@ -221,8 +218,7 @@ def open_enhanced_add_dialog():
             if success:
                 ui.notify(f"Источник '{source_name}' перемещен вниз", type="positive")
                 refresh_sources_list()
-                # Принудительное обновление через JavaScript
-                ui.run_javascript("setTimeout(() => { location.reload(); }, 300);")
+                # Без перезагрузки: список обновлен выше
             else:
                 ui.notify(f"Не удалось переместить '{source_name}' вниз", type="negative")
 

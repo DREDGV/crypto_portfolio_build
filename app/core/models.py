@@ -25,3 +25,13 @@ class TransactionIn(BaseModel):
     strategy: str
     source: Optional[str] = None
     notes: Optional[str] = None
+
+
+class SourceMeta(SQLModel, table=True):
+    """Персистентные настройки источников (название/порядок/скрыт)."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    original_name: str = Field(index=True)
+    custom_name: Optional[str] = Field(default=None)
+    order_index: Optional[int] = Field(default=None, index=True)
+    hidden: bool = Field(default=False, index=True)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

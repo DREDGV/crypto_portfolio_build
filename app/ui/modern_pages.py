@@ -1,5 +1,9 @@
 """
 Современные страницы для Crypto Portfolio Manager
+
+ARCHIVED UI: Этот модуль больше не используется активной версией UI.
+Актуальный UI: app/ui/pages_step2.py
+Дата архивации: 2025-09-22
 """
 
 import os
