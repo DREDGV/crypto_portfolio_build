@@ -142,7 +142,7 @@ def open_enhanced_add_dialog():
             except Exception as e:
                 print(f"Ошибка обновления кнопок быстрого выбора: {e}")
 
-        def edit_source_name(old_name, mgmt_dialog, refresh_sources_list):
+        def edit_source_name(old_name, mgmt_dialog, refresh_func):
             """Редактирует название источника"""
             print(f"DEBUG: Открываем диалог редактирования для источника: {old_name}")
             with ui.dialog() as edit_dialog, ui.card().classes("p-6"):
@@ -173,9 +173,9 @@ def open_enhanced_add_dialog():
                         ui.notify(f"Источник переименован: {old_name} -> {new_name}", type="positive")
                         edit_dialog.close()
                         # Принудительно обновляем список
-                        print("DEBUG: Вызываем refresh_sources_list() после успешного сохранения")
-                        refresh_sources_list()
-                        # Без принудительного перезагруза страницы: UI обновится через refresh_sources_list()
+                        print("DEBUG: Вызываем refresh_func() после успешного сохранения")
+                        refresh_func()
+                        # Без принудительного перезагруза страницы: UI обновится через refresh_both()
                     else:
                         ui.notify("Ошибка переименования", type="negative")
                 
@@ -185,7 +185,7 @@ def open_enhanced_add_dialog():
                 
                 edit_dialog.open()
 
-        def delete_source(source_name, mgmt_dialog, refresh_sources_list):
+        def delete_source(source_name, mgmt_dialog, refresh_func):
             """Удаляет источник"""
             with ui.dialog() as delete_dialog, ui.card().classes("p-6"):
                 ui.label(f"Удалить источник '{source_name}'?").classes("text-lg font-semibold mb-4")
@@ -196,7 +196,7 @@ def open_enhanced_add_dialog():
                     if success:
                         ui.notify(f"Источник '{source_name}' удален", type="positive")
                         delete_dialog.close()
-                        refresh_sources_list()
+                        refresh_func()
                         # Без перезагрузки страницы
                     else:
                         ui.notify("Ошибка удаления", type="negative")
@@ -207,29 +207,29 @@ def open_enhanced_add_dialog():
                 
                 delete_dialog.open()
 
-        def move_source_up(source_name, mgmt_dialog, refresh_sources_list):
+        def move_source_up(source_name, mgmt_dialog, refresh_func):
             """Перемещает источник вверх в списке"""
             from app.core.services import move_source_up as move_up
             success = move_up(source_name)
             if success:
                 ui.notify(f"Источник '{source_name}' перемещен вверх", type="positive")
-                refresh_sources_list()
+                refresh_func()
                 # Без перезагрузки: список обновлен выше
             else:
                 ui.notify(f"Не удалось переместить '{source_name}' вверх", type="negative")
 
-        def move_source_down(source_name, mgmt_dialog, refresh_sources_list):
+        def move_source_down(source_name, mgmt_dialog, refresh_func):
             """Перемещает источник вниз в списке"""
             from app.core.services import move_source_down as move_down
             success = move_down(source_name)
             if success:
                 ui.notify(f"Источник '{source_name}' перемещен вниз", type="positive")
-                refresh_sources_list()
+                refresh_func()
                 # Без перезагрузки: список обновлен выше
             else:
                 ui.notify(f"Не удалось переместить '{source_name}' вниз", type="negative")
 
-        def add_new_source(mgmt_dialog, refresh_sources_list):
+        def add_new_source(mgmt_dialog, refresh_func):
             """Добавляет новый источник"""
             with ui.dialog() as add_dialog, ui.card().classes("p-6"):
                 ui.label("Добавить новый источник").classes("text-lg font-semibold mb-4")
@@ -244,7 +244,7 @@ def open_enhanced_add_dialog():
                     
                     ui.notify(f"Источник '{source_name}' готов к использованию", type="positive")
                     add_dialog.close()
-                    refresh_sources_list()
+                    refresh_func()
                 
                 with ui.row().classes("justify-end gap-3"):
                     ui.button("Отмена", on_click=add_dialog.close)
