@@ -33,6 +33,15 @@ from app.core.services import (
     get_alert_statistics,
 )
 
+# Импорт модуля графиков
+from app.ui.charts import (
+    create_portfolio_distribution_chart,
+    create_transactions_timeline_chart,
+    create_strategy_performance_chart,
+    create_source_activity_chart,
+    get_portfolio_summary,
+)
+
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
 TYPES = ["buy", "sell", "exchange_in", "exchange_out", "deposit", "withdrawal"]
 STRATS = ["long", "mid", "short", "scalp"]
@@ -916,6 +925,7 @@ def portfolio_page():
                     ui.tab("overview", "📊 Обзор").classes("px-4 py-2")
                     ui.tab("positions", "💼 Позиции").classes("px-4 py-2")
                     ui.tab("transactions", "📝 Сделки").classes("px-4 py-2")
+                    ui.tab("charts", "📈 Графики").classes("px-4 py-2")
                     ui.tab("alerts", "🔔 Алерты").classes("px-4 py-2")
                     ui.tab("analytics", "📈 Аналитика").classes("px-4 py-2")
 
@@ -967,6 +977,10 @@ def portfolio_page():
                                 except Exception as e:
                                     with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
                                         ui.label(f"Ошибка загрузки: {e}").classes("text-red-500")
+
+                    # Вкладка графиков
+                    with ui.tab_panel("charts"):
+                        create_charts_tab()
 
                     # Вкладка алертов
                     with ui.tab_panel("alerts"):
@@ -1287,6 +1301,103 @@ def create_alerts_tab():
                         dialog.open()
                 except Exception as e:
                     ui.notify(f"Ошибка получения статистики: {e}", type="negative")
+
+
+def create_charts_tab():
+    """Создает вкладку с графиками и визуализацией портфеля"""
+    with ui.column().classes("w-full space-y-6"):
+        ui.label("📈 Графики и визуализация").classes("text-2xl font-bold text-gray-800")
+        
+        # Кнопки управления
+        with ui.row().classes("gap-3 mb-4"):
+            ui.button("🔄 Обновить графики", icon="refresh").classes("bg-blue-500 text-white").on("click", lambda: refresh_all_charts())
+            ui.button("📊 Сводка", icon="analytics").classes("bg-green-500 text-white").on("click", lambda: show_portfolio_summary())
+        
+        # Сводные карточки
+        with ui.row().classes("w-full gap-4 mb-6"):
+            summary = get_portfolio_summary()
+            
+            with ui.card().classes("p-4 bg-blue-50 border-l-4 border-blue-400"):
+                ui.label("Всего сделок").classes("text-sm text-gray-600")
+                ui.label(str(summary['total_transactions'])).classes("text-2xl font-bold text-blue-600")
+            
+            with ui.card().classes("p-4 bg-green-50 border-l-4 border-green-400"):
+                ui.label("Уникальных монет").classes("text-sm text-gray-600")
+                ui.label(str(summary['unique_coins'])).classes("text-2xl font-bold text-green-600")
+            
+            with ui.card().classes("p-4 bg-purple-50 border-l-4 border-purple-400"):
+                ui.label("Активных позиций").classes("text-sm text-gray-600")
+                ui.label(str(summary['active_positions'])).classes("text-2xl font-bold text-purple-600")
+            
+            with ui.card().classes("p-4 bg-orange-50 border-l-4 border-orange-400"):
+                ui.label("Общий объем").classes("text-sm text-gray-600")
+                ui.label(f"{summary['total_volume']:.2f} {CURRENCY}").classes("text-2xl font-bold text-orange-600")
+        
+        # Графики в сетке 2x2
+        with ui.row().classes("w-full gap-4"):
+            # Левая колонка
+            with ui.column().classes("flex-1 space-y-4"):
+                # Распределение портфеля
+                with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                    ui.label("Распределение портфеля").classes("text-lg font-semibold text-gray-800 mb-4")
+                    portfolio_chart_container = ui.html("").classes("w-full")
+                
+                # Временная линия транзакций
+                with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                    ui.label("Временная линия транзакций").classes("text-lg font-semibold text-gray-800 mb-4")
+                    timeline_chart_container = ui.html("").classes("w-full")
+            
+            # Правая колонка
+            with ui.column().classes("flex-1 space-y-4"):
+                # Производительность по стратегиям
+                with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                    ui.label("Производительность по стратегиям").classes("text-lg font-semibold text-gray-800 mb-4")
+                    strategy_chart_container = ui.html("").classes("w-full")
+                
+                # Активность по источникам
+                with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                    ui.label("Активность по источникам").classes("text-lg font-semibold text-gray-800 mb-4")
+                    source_chart_container = ui.html("").classes("w-full")
+        
+        def refresh_all_charts():
+            """Обновляет все графики"""
+            try:
+                ui.notify("Обновление графиков...", type="info")
+                
+                # Обновляем каждый график
+                portfolio_chart_container.content = create_portfolio_distribution_chart()
+                timeline_chart_container.content = create_transactions_timeline_chart()
+                strategy_chart_container.content = create_strategy_performance_chart()
+                source_chart_container.content = create_source_activity_chart()
+                
+                ui.notify("Графики обновлены!", type="positive")
+            except Exception as e:
+                ui.notify(f"Ошибка обновления графиков: {e}", type="negative")
+        
+        def show_portfolio_summary():
+            """Показывает детальную сводку портфеля"""
+            try:
+                summary = get_portfolio_summary()
+                
+                with ui.dialog() as dialog, ui.card().classes("p-6 w-96"):
+                    ui.label("📊 Сводка портфеля").classes("text-lg font-semibold mb-4")
+                    
+                    with ui.column().classes("space-y-3"):
+                        ui.label(f"Всего сделок: {summary['total_transactions']}")
+                        ui.label(f"Уникальных монет: {summary['unique_coins']}")
+                        ui.label(f"Активных позиций: {summary['active_positions']}")
+                        ui.label(f"Общий объем: {summary['total_volume']:.2f} {CURRENCY}")
+                        ui.label(f"Средний размер сделки: {summary['avg_transaction_size']:.2f} {CURRENCY}")
+                    
+                    with ui.row().classes("justify-end mt-4"):
+                        ui.button("Закрыть", on_click=dialog.close)
+                    
+                    dialog.open()
+            except Exception as e:
+                ui.notify(f"Ошибка получения сводки: {e}", type="negative")
+        
+        # Инициализируем графики при загрузке
+        refresh_all_charts()
 
 
 @ui.page("/")
