@@ -84,9 +84,9 @@ def list_transactions() -> list[dict]:
                 "type": t.type,
                 "quantity": t.quantity,
                 "price": t.price,
-                "ts_local": ts_local.strftime("%Y-%m-%d %H:%M:%S"),
+                "created_at": ts_local.strftime("%Y-%m-%d %H:%M:%S"),  # Исправлено: было ts_local
                 "strategy": t.strategy,
-                "source": t.source or "",
+                "source": t.source or "",  # Уже правильно
                 "notes": t.notes or "",
             }
         )

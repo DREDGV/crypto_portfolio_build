@@ -63,6 +63,17 @@ def get_tasks() -> str:
         return "Ошибка загрузки задач"
 
 
+def get_roadmap() -> str:
+    """Возвращает содержимое планов развития."""
+    try:
+        tasks_file = Path(__file__).parent.parent.parent / "TASKS.md"
+        if tasks_file.exists():
+            return tasks_file.read_text(encoding="utf-8")
+        return "Планы развития недоступны"
+    except Exception:
+        return "Ошибка загрузки планов развития"
+
+
 def parse_version(version: str) -> tuple[int, int, int]:
     """Парсит версию в формате MAJOR.MINOR.PATCH."""
     try:
@@ -128,5 +139,6 @@ def get_app_info() -> dict:
         "changelog": get_changelog(),
         "concept": get_concept(),
         "tasks": get_tasks(),
+        "roadmap": get_roadmap(),  # Добавлено
         "version_info": get_version_info(),
     }
