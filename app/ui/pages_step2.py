@@ -33,14 +33,14 @@ from app.core.services import (
     get_alert_statistics,
 )
 
-# Импорт модуля графиков
-from app.ui.charts import (
-    create_portfolio_distribution_chart,
-    create_transactions_timeline_chart,
-    create_strategy_performance_chart,
-    create_source_activity_chart,
-    get_portfolio_summary,
-)
+# Импорт модуля графиков (временно отключен)
+# from app.ui.charts import (
+#     create_portfolio_distribution_chart,
+#     create_transactions_timeline_chart,
+#     create_strategy_performance_chart,
+#     create_source_activity_chart,
+#     get_portfolio_summary,
+# )
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
 TYPES = ["buy", "sell", "exchange_in", "exchange_out", "deposit", "withdrawal"]
@@ -769,6 +769,46 @@ def refresh():
 def portfolio_page():
     """Главная страница портфеля с улучшенными карточками и полным функционалом ввода"""
     from app.core.version import get_app_info
+    
+    # Добавляем CSS стили для современных вкладок
+    ui.add_head_html('''
+    <style>
+    /* Стили для активных вкладок */
+    .q-tab--active {
+        color: #2563eb !important;
+        border-bottom-color: #2563eb !important;
+        background-color: #eff6ff !important;
+    }
+    
+    /* Стили для hover эффектов */
+    .q-tab:hover {
+        background-color: #f8fafc !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Фиксированная ширина вкладок */
+    .q-tab {
+        min-width: 120px !important;
+        text-align: center !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    /* Убираем смещение при активации */
+    .q-tabs__content {
+        overflow: visible !important;
+    }
+    
+    /* Стили для контейнера вкладок */
+    .q-tabs {
+        border-bottom: 1px solid #e5e7eb !important;
+    }
+    
+    /* Улучшенные стили для иконок */
+    .q-tab .q-icon {
+        margin-right: 8px !important;
+    }
+    </style>
+    ''')
 
     # Создаем основной контейнер с боковой панелью
     with ui.row().classes("w-full h-screen overflow-hidden"):
@@ -920,14 +960,14 @@ def portfolio_page():
 
             # Область контента с табами
             with ui.column().classes("flex-1 p-6 overflow-auto"):
-                # Табы
+                # Современные табы с фиксированным дизайном
                 with ui.tabs().classes("w-full mb-6") as tabs:
-                    ui.tab("overview", "📊 Обзор").classes("px-4 py-2")
-                    ui.tab("positions", "💼 Позиции").classes("px-4 py-2")
-                    ui.tab("transactions", "📝 Сделки").classes("px-4 py-2")
-                    ui.tab("charts", "📈 Графики").classes("px-4 py-2")
-                    ui.tab("alerts", "🔔 Алерты").classes("px-4 py-2")
-                    ui.tab("analytics", "📈 Аналитика").classes("px-4 py-2")
+                    ui.tab("overview", "📊 Обзор")
+                    ui.tab("positions", "💼 Позиции") 
+                    ui.tab("transactions", "📝 Сделки")
+                    # ui.tab("charts", "📈 Графики")  # Временно отключено
+                    ui.tab("alerts", "🔔 Алерты")
+                    ui.tab("analytics", "📈 Аналитика")
 
                 with ui.tab_panels(tabs, value="overview").classes("w-full"):
                     # Вкладка обзора с улучшенными карточками
@@ -978,9 +1018,9 @@ def portfolio_page():
                                     with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
                                         ui.label(f"Ошибка загрузки: {e}").classes("text-red-500")
 
-                    # Вкладка графиков
-                    with ui.tab_panel("charts"):
-                        create_charts_tab()
+                    # Вкладка графиков (временно отключена)
+                    # with ui.tab_panel("charts"):
+                    #     create_charts_tab()
 
                     # Вкладка алертов
                     with ui.tab_panel("alerts"):
