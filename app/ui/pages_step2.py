@@ -7,7 +7,7 @@ import os
 
 from nicegui import ui
 
-from app.core.models import TransactionIn
+from app.core.models import TransactionIn, PriceAlertIn
 from app.core.services import (
     add_transaction,
     delete_transaction,
@@ -24,6 +24,13 @@ from app.core.services import (
     update_source_name,
     delete_source_from_transactions,
     get_source_statistics,
+    # Алерты
+    add_price_alert,
+    get_price_alerts,
+    update_price_alert,
+    delete_price_alert,
+    check_price_alerts,
+    get_alert_statistics,
 )
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
@@ -909,6 +916,7 @@ def portfolio_page():
                     ui.tab("overview", "📊 Обзор").classes("px-4 py-2")
                     ui.tab("positions", "💼 Позиции").classes("px-4 py-2")
                     ui.tab("transactions", "📝 Сделки").classes("px-4 py-2")
+                    ui.tab("alerts", "🔔 Алерты").classes("px-4 py-2")
                     ui.tab("analytics", "📈 Аналитика").classes("px-4 py-2")
 
                 with ui.tab_panels(tabs, value="overview").classes("w-full"):
@@ -958,6 +966,10 @@ def portfolio_page():
                                 except Exception as e:
                                     with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
                                         ui.label(f"Ошибка загрузки: {e}").classes("text-red-500")
+
+                    # Вкладка алертов
+                    with ui.tab_panel("alerts"):
+                        create_alerts_tab()
 
                     with ui.tab_panel("analytics"):
                         with ui.column().classes("w-full space-y-4"):
@@ -1122,3 +1134,161 @@ def show_about_page():
                         </div>
                         """
                         )
+
+
+def create_alerts_tab():
+    """Создает вкладку с алертами по ценам"""
+    with ui.column().classes("w-full space-y-4"):
+        ui.label("🔔 Алерты по ценам").classes("text-2xl font-bold text-gray-800")
+        
+        # Кнопки управления
+        with ui.row().classes("gap-3 mb-4"):
+            ui.button("➕ Добавить алерт", icon="add").classes("bg-blue-500 text-white").on("click", lambda: open_add_alert_dialog())
+            ui.button("🔄 Проверить алерты", icon="refresh").classes("bg-green-500 text-white").on("click", lambda: check_alerts())
+            ui.button("📊 Статистика", icon="analytics").classes("bg-purple-500 text-white").on("click", lambda: show_alert_statistics())
+        
+        # Список алертов
+        with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+            ui.label("Активные алерты").classes("text-lg font-semibold text-gray-800 mb-4")
+            
+            # Контейнер для списка алертов
+            alerts_container = ui.column().classes("w-full")
+            
+            def refresh_alerts_list():
+                """Обновляет список алертов"""
+                alerts_container.clear()
+                
+                try:
+                    alerts = get_price_alerts(active_only=True)
+                    if alerts:
+                        for alert in alerts:
+                            with alerts_container:
+                                with ui.card().classes("p-3 mb-2 border-l-4 border-blue-400"):
+                                    with ui.row().classes("items-center justify-between"):
+                                        with ui.column().classes("flex-1"):
+                                            ui.label(f"💰 {alert.coin}").classes("font-semibold text-gray-800")
+                                            ui.label(f"Цель: {alert.target_price} {CURRENCY} ({alert.alert_type})").classes("text-sm text-gray-600")
+                                            if alert.notes:
+                                                ui.label(f"Заметка: {alert.notes}").classes("text-xs text-gray-500")
+                                        with ui.row().classes("gap-2"):
+                                            ui.button("✏️", on_click=lambda a=alert: edit_alert(a)).props("size=sm flat").classes("text-blue-600")
+                                            ui.button("🗑️", on_click=lambda a=alert: delete_alert(a)).props("size=sm flat").classes("text-red-600")
+                    else:
+                        with alerts_container:
+                            with ui.row().classes("h-32 items-center justify-center bg-gray-50 rounded-lg"):
+                                ui.label("Нет активных алертов").classes("text-gray-500")
+                except Exception as e:
+                    with alerts_container:
+                        with ui.row().classes("h-32 items-center justify-center bg-gray-50 rounded-lg"):
+                            ui.label(f"Ошибка загрузки: {e}").classes("text-red-500")
+            
+            # Инициализируем список
+            refresh_alerts_list()
+            
+            # Функции для работы с алертами
+            def open_add_alert_dialog():
+                """Открывает диалог добавления алерта"""
+                with ui.dialog() as dialog, ui.card().classes("p-6 w-96"):
+                    ui.label("Добавить алерт по цене").classes("text-lg font-semibold mb-4")
+                    
+                    coin_input = ui.input("Монета (например, BTC)").classes("w-full mb-3")
+                    price_input = ui.number("Целевая цена").classes("w-full mb-3")
+                    
+                    with ui.row().classes("w-full mb-3"):
+                        ui.label("Тип алерта:").classes("text-sm font-medium")
+                        alert_type_select = ui.select(
+                            ["above", "below"], 
+                            value="above",
+                            label="Выберите тип"
+                        ).classes("w-full")
+                    
+                    notes_input = ui.textarea("Заметки (необязательно)").classes("w-full mb-4")
+                    
+                    def add_alert():
+                        try:
+                            coin = coin_input.value.strip().upper()
+                            target_price = float(price_input.value)
+                            alert_type = alert_type_select.value
+                            notes = notes_input.value.strip() if notes_input.value else None
+                            
+                            if not coin or target_price <= 0:
+                                ui.notify("Заполните все обязательные поля", type="negative")
+                                return
+                            
+                            alert_data = PriceAlertIn(
+                                coin=coin,
+                                target_price=target_price,
+                                alert_type=alert_type,
+                                notes=notes
+                            )
+                            
+                            add_price_alert(alert_data)
+                            ui.notify(f"Алерт для {coin} создан", type="positive")
+                            dialog.close()
+                            refresh_alerts_list()
+                            
+                        except Exception as e:
+                            ui.notify(f"Ошибка создания алерта: {e}", type="negative")
+                    
+                    with ui.row().classes("justify-end gap-3"):
+                        ui.button("Отмена", on_click=dialog.close)
+                        ui.button("Добавить", on_click=add_alert).classes("bg-blue-500 text-white")
+                    
+                    dialog.open()
+            
+            def edit_alert(alert):
+                """Редактирует алерт"""
+                ui.notify("Функция редактирования в разработке", type="info")
+            
+            def delete_alert(alert):
+                """Удаляет алерт"""
+                try:
+                    if delete_price_alert(alert.id):
+                        ui.notify(f"Алерт для {alert.coin} удален", type="positive")
+                        refresh_alerts_list()
+                    else:
+                        ui.notify("Ошибка удаления алерта", type="negative")
+                except Exception as e:
+                    ui.notify(f"Ошибка: {e}", type="negative")
+            
+            def check_alerts():
+                """Проверяет все алерты"""
+                try:
+                    triggered = check_price_alerts()
+                    if triggered:
+                        for alert in triggered:
+                            ui.notify(
+                                f"🔔 Алерт сработал! {alert['coin']}: {alert['current_price']} {CURRENCY} ({alert['alert_type']} {alert['target_price']})",
+                                type="positive",
+                                timeout=10000
+                            )
+                        refresh_alerts_list()
+                    else:
+                        ui.notify("Активных алертов не найдено", type="info")
+                except Exception as e:
+                    ui.notify(f"Ошибка проверки алертов: {e}", type="negative")
+            
+            def show_alert_statistics():
+                """Показывает статистику алертов"""
+                try:
+                    stats = get_alert_statistics()
+                    with ui.dialog() as dialog, ui.card().classes("p-6"):
+                        ui.label("📊 Статистика алертов").classes("text-lg font-semibold mb-4")
+                        
+                        with ui.column().classes("space-y-2"):
+                            ui.label(f"Всего алертов: {stats['total_alerts']}")
+                            ui.label(f"Активных: {stats['active_alerts']}")
+                            ui.label(f"Сработавших: {stats['triggered_alerts']}")
+                        
+                        with ui.row().classes("justify-end mt-4"):
+                            ui.button("Закрыть", on_click=dialog.close)
+                        
+                        dialog.open()
+                except Exception as e:
+                    ui.notify(f"Ошибка получения статистики: {e}", type="negative")
+
+
+@ui.page("/")
+def main_page():
+    """Главная страница с портфелем"""
+    portfolio_page()

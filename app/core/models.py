@@ -35,3 +35,23 @@ class SourceMeta(SQLModel, table=True):
     order_index: Optional[int] = Field(default=None, index=True)
     hidden: bool = Field(default=False, index=True)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class PriceAlert(SQLModel, table=True):
+    """Алерты по ценам криптовалют."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    coin: str = Field(index=True)
+    target_price: float
+    alert_type: str = Field(index=True)  # "above", "below", "change_percent"
+    is_active: bool = Field(default=True, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    triggered_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class PriceAlertIn(BaseModel):
+    """Входящие данные для создания алерта."""
+    coin: str
+    target_price: float
+    alert_type: str  # "above", "below", "change_percent"
+    notes: Optional[str] = None

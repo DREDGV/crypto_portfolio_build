@@ -8,7 +8,7 @@ import json
 from sqlmodel import Session, select
 
 from app.adapters.prices import get_current_price
-from app.core.models import Transaction, TransactionIn, SourceMeta
+from app.core.models import Transaction, TransactionIn, SourceMeta, PriceAlert, PriceAlertIn
 from app.storage.db import DB_PATH, engine
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
@@ -729,4 +729,150 @@ def get_source_statistics() -> dict:
             "unique_sources": 0,
             "sources_with_frequency": [],
             "top_sources": []
+        }
+
+
+# ==================== СИСТЕМА АЛЕРТОВ ПО ЦЕНАМ ====================
+
+def add_price_alert(data: PriceAlertIn) -> int:
+    """Добавляет новый алерт по цене."""
+    try:
+        with Session(engine) as session:
+            alert = PriceAlert(**data.model_dump())
+            session.add(alert)
+            session.commit()
+            session.refresh(alert)
+            print(f"DEBUG: Создан алерт для {data.coin} {data.alert_type} {data.target_price}")
+            return alert.id
+    except Exception as e:
+        print(f"Ошибка создания алерта: {e}")
+        raise
+
+
+def get_price_alerts(active_only: bool = True) -> list[PriceAlert]:
+    """Получает список алертов."""
+    try:
+        with Session(engine) as session:
+            query = select(PriceAlert)
+            if active_only:
+                query = query.where(PriceAlert.is_active == True)
+            query = query.order_by(PriceAlert.created_at.desc())
+            return session.exec(query).all()
+    except Exception as e:
+        print(f"Ошибка получения алертов: {e}")
+        return []
+
+
+def update_price_alert(alert_id: int, **updates) -> bool:
+    """Обновляет алерт."""
+    try:
+        with Session(engine) as session:
+            alert = session.get(PriceAlert, alert_id)
+            if not alert:
+                return False
+            
+            for key, value in updates.items():
+                if hasattr(alert, key):
+                    setattr(alert, key, value)
+            
+            session.add(alert)
+            session.commit()
+            print(f"DEBUG: Обновлен алерт {alert_id}")
+            return True
+    except Exception as e:
+        print(f"Ошибка обновления алерта: {e}")
+        return False
+
+
+def delete_price_alert(alert_id: int) -> bool:
+    """Удаляет алерт."""
+    try:
+        with Session(engine) as session:
+            alert = session.get(PriceAlert, alert_id)
+            if not alert:
+                return False
+            
+            session.delete(alert)
+            session.commit()
+            print(f"DEBUG: Удален алерт {alert_id}")
+            return True
+    except Exception as e:
+        print(f"Ошибка удаления алерта: {e}")
+        return False
+
+
+def check_price_alerts() -> list[dict]:
+    """Проверяет все активные алерты и возвращает сработавшие."""
+    triggered_alerts = []
+    
+    try:
+        with Session(engine) as session:
+            active_alerts = session.exec(
+                select(PriceAlert).where(PriceAlert.is_active == True)
+            ).all()
+            
+            for alert in active_alerts:
+                try:
+                    current_price = get_current_price(alert.coin)
+                    if current_price is None:
+                        continue
+                    
+                    triggered = False
+                    if alert.alert_type == "above" and current_price >= alert.target_price:
+                        triggered = True
+                    elif alert.alert_type == "below" and current_price <= alert.target_price:
+                        triggered = True
+                    
+                    if triggered:
+                        # Помечаем алерт как сработавший
+                        alert.triggered_at = dt.datetime.now()
+                        alert.is_active = False
+                        session.add(alert)
+                        
+                        triggered_alerts.append({
+                            "alert_id": alert.id,
+                            "coin": alert.coin,
+                            "target_price": alert.target_price,
+                            "current_price": current_price,
+                            "alert_type": alert.alert_type,
+                            "notes": alert.notes
+                        })
+                        
+                        print(f"DEBUG: Сработал алерт {alert.id} для {alert.coin}: {current_price} {alert.alert_type} {alert.target_price}")
+                
+                except Exception as e:
+                    print(f"Ошибка проверки алерта {alert.id}: {e}")
+                    continue
+            
+            session.commit()
+            return triggered_alerts
+            
+    except Exception as e:
+        print(f"Ошибка проверки алертов: {e}")
+        return []
+
+
+def get_alert_statistics() -> dict:
+    """Возвращает статистику по алертам."""
+    try:
+        with Session(engine) as session:
+            total_alerts = session.exec(select(PriceAlert)).all()
+            active_alerts = [a for a in total_alerts if a.is_active]
+            triggered_alerts = [a for a in total_alerts if a.triggered_at is not None]
+            
+            return {
+                "total_alerts": len(total_alerts),
+                "active_alerts": len(active_alerts),
+                "triggered_alerts": len(triggered_alerts),
+                "alerts_by_coin": {},
+                "alerts_by_type": {}
+            }
+    except Exception as e:
+        print(f"Ошибка получения статистики алертов: {e}")
+        return {
+            "total_alerts": 0,
+            "active_alerts": 0,
+            "triggered_alerts": 0,
+            "alerts_by_coin": {},
+            "alerts_by_type": {}
         }
