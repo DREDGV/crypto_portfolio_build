@@ -953,6 +953,7 @@ def portfolio_page():
                                             {"name": "source", "label": "Источник", "field": "source", "sortable": True},
                                             {"name": "strategy", "label": "Стратегия", "field": "strategy", "sortable": True},
                                             {"name": "created_at", "label": "Дата", "field": "created_at", "sortable": True},
+                                            {"name": "notes", "label": "Заметки", "field": "notes", "sortable": True},
                                         ]
                                         
                                         ui.table(
