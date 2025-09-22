@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 from collections import defaultdict, deque
+import json
 
 from sqlmodel import Session, select
 
@@ -477,6 +478,54 @@ POPULAR_SOURCES = [
 def _get_source_meta_map(session: Session) -> dict[str, SourceMeta]:
     metas = session.exec(select(SourceMeta)).all()
     return {m.original_name: m for m in metas}
+
+
+def export_sources_meta() -> str:
+    """Экспортирует метаданные источников в JSON-файл и возвращает путь."""
+    export_dir = os.path.join(os.path.dirname(DB_PATH), "exports")
+    os.makedirs(export_dir, exist_ok=True)
+    filename = f"sources_meta_{time.strftime('%Y%m%d_%H%M%S')}.json"
+    path = os.path.join(export_dir, filename)
+    with Session(engine) as session:
+        metas = session.exec(select(SourceMeta)).all()
+        data = [
+            {
+                "original_name": m.original_name,
+                "custom_name": m.custom_name,
+                "order_index": m.order_index,
+                "hidden": bool(m.hidden),
+                "updated_at": m.updated_at.isoformat(),
+            }
+            for m in metas
+        ]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return path
+
+
+def import_sources_meta_from_json_str(json_str: str) -> bool:
+    """Импортирует метаданные источников из JSON-строки."""
+    try:
+        items = json.loads(json_str)
+        if not isinstance(items, list):
+            return False
+        with Session(engine) as session:
+            for item in items:
+                orig = item.get("original_name")
+                if not orig:
+                    continue
+                meta = session.exec(select(SourceMeta).where(SourceMeta.original_name == orig)).first()
+                if not meta:
+                    meta = SourceMeta(original_name=orig)
+                meta.custom_name = item.get("custom_name")
+                meta.order_index = item.get("order_index")
+                meta.hidden = bool(item.get("hidden", False))
+                meta.updated_at = dt.datetime.now()
+                session.add(meta)
+            session.commit()
+        return True
+    except Exception as _:  # noqa: BLE001
+        return False
 
 def get_sources_with_frequency() -> list[tuple[str, int]]:
     """Получает источники с частотой использования"""

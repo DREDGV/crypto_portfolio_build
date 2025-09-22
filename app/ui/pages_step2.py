@@ -250,7 +250,7 @@ def open_enhanced_add_dialog():
             mgmt_dialog = ui.dialog()
             sources_container = None
             
-            def refresh_sources_list():
+            def refresh_mgmt_sources_list():
                 """Обновляет список источников в диалоге"""
                 nonlocal sources_container
                 if sources_container:
@@ -278,13 +278,21 @@ def open_enhanced_add_dialog():
                                 
                                 # Кнопки управления
                                 with ui.row().classes("gap-1"):
-                                    ui.button("✏️", on_click=lambda s=source_name: edit_source_name(s, mgmt_dialog, refresh_sources_list)).props("size=sm flat").classes("text-blue-600")
-                                    ui.button("🗑️", on_click=lambda s=source_name: delete_source(s, mgmt_dialog, refresh_sources_list)).props("size=sm flat").classes("text-red-600")
+                                    ui.button("✏️", on_click=lambda s=source_name: edit_source_name(s, mgmt_dialog, refresh_both)).props("size=sm flat").classes("text-blue-600")
+                                    ui.button("🗑️", on_click=lambda s=source_name: delete_source(s, mgmt_dialog, refresh_both)).props("size=sm flat").classes("text-red-600")
                                     if i > 0:
-                                        ui.button("⬆️", on_click=lambda s=source_name: move_source_up(s, mgmt_dialog, refresh_sources_list)).props("size=sm flat").classes("text-green-600")
+                                        ui.button("⬆️", on_click=lambda s=source_name: move_source_up(s, mgmt_dialog, refresh_both)).props("size=sm flat").classes("text-green-600")
                                     if i < len(sources_with_freq) - 1:
-                                        ui.button("⬇️", on_click=lambda s=source_name: move_source_down(s, mgmt_dialog, refresh_sources_list)).props("size=sm flat").classes("text-green-600")
+                                        ui.button("⬇️", on_click=lambda s=source_name: move_source_down(s, mgmt_dialog, refresh_both)).props("size=sm flat").classes("text-green-600")
                     print("DEBUG: Список источников обновлен")
+
+            # Обновляет и выпадающий список в форме, и список в диалоге
+            def refresh_both():
+                try:
+                    refresh_sources_list()  # обновляет селект и топ‑кнопки в форме
+                except Exception as _:
+                    pass
+                refresh_mgmt_sources_list()
             
             with mgmt_dialog, ui.card().classes("min-w-[600px] max-w-[800px] p-6"):
                 # Заголовок
@@ -297,14 +305,14 @@ def open_enhanced_add_dialog():
                     ui.label("Источники (сортировка по популярности):").classes("text-sm font-medium text-gray-700")
                     
                     sources_container = ui.column().classes("space-y-3")
-                    refresh_sources_list()  # Инициализируем список
+                    refresh_mgmt_sources_list()  # Инициализируем список
                 
                 # Кнопки действий
                 with ui.row().classes("justify-end gap-3 mt-6 pt-4 border-t border-gray-200"):
                     ui.button("Закрыть", on_click=mgmt_dialog.close).classes(
                         "bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
                     )
-                    ui.button("Добавить источник", on_click=lambda: add_new_source(mgmt_dialog, refresh_sources_list)).classes(
+                    ui.button("Добавить источник", on_click=lambda: add_new_source(mgmt_dialog, refresh_both)).classes(
                         "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
                     )
                 
