@@ -173,8 +173,11 @@ def enrich_positions_with_market(positions: list[dict], quote: str = "USD"):
     total_unreal = 0.0
     total_realized = 0.0
     enriched = []
+    
     for p in positions:
-        price = get_current_price(p["coin"], quote=quote) or 0.0
+        coin = p["coin"]
+        price = get_current_price(coin, quote=quote) or 0.0
+        
         value = p["quantity"] * price
         unreal = value - p["cost_basis"]
         unreal_pct = (

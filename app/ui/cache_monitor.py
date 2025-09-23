@@ -3,6 +3,7 @@
 """
 from nicegui import ui
 from app.core.cache import cache_manager
+from app.adapters.prices import get_cache_stats, clean_expired_cache, preload_popular_coins
 
 
 def create_cache_monitor_tab():
@@ -15,6 +16,7 @@ def create_cache_monitor_tab():
             ui.button("🔄 Обновить статистику", icon="refresh").classes("bg-blue-500 text-white").on("click", lambda: refresh_cache_stats())
             ui.button("🗑️ Очистить кэш", icon="delete").classes("bg-red-500 text-white").on("click", lambda: clear_cache())
             ui.button("📈 Статистика производительности", icon="analytics").classes("bg-green-500 text-white").on("click", lambda: show_performance_stats())
+            ui.button("🚀 Предзагрузить монеты", icon="rocket_launch").classes("bg-purple-500 text-white").on("click", lambda: preload_coins())
         
         # Статистика кэша
         with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
@@ -140,3 +142,73 @@ def create_cache_monitor_tab():
                 ui.label("• Добавлении новой транзакции")
                 ui.label("• Изменении источников")
                 ui.label("• Обновлении алертов")
+        
+        # Кэш цен криптовалют
+        with ui.card().classes("p-4 bg-white shadow-sm rounded-lg mt-4"):
+            ui.label("💰 Кэш цен криптовалют").classes("text-lg font-semibold text-gray-800 mb-4")
+            
+            # Контейнер для статистики цен
+            prices_stats_container = ui.column().classes("w-full")
+            
+            def refresh_prices_stats():
+                """Обновляет статистику кэша цен"""
+                prices_stats_container.clear()
+                
+                with prices_stats_container:
+                    try:
+                        stats = get_cache_stats()
+                        
+                        # Общая статистика кэша цен
+                        with ui.row().classes("w-full gap-4 mb-4"):
+                            with ui.card().classes("p-3 bg-blue-50 border-l-4 border-blue-400 flex-1"):
+                                ui.label("Всего монет в кэше").classes("text-sm text-gray-600")
+                                ui.label(str(stats['total_entries'])).classes("text-xl font-bold text-blue-600")
+                            
+                            with ui.card().classes("p-3 bg-green-50 border-l-4 border-green-400 flex-1"):
+                                ui.label("Активных записей").classes("text-sm text-gray-600")
+                                ui.label(str(stats['valid_entries'])).classes("text-xl font-bold text-green-600")
+                            
+                            with ui.card().classes("p-3 bg-red-50 border-l-4 border-red-400 flex-1"):
+                                ui.label("Истекших записей").classes("text-sm text-gray-600")
+                                ui.label(str(stats['expired_entries'])).classes("text-xl font-bold text-red-600")
+                            
+                            with ui.card().classes("p-3 bg-purple-50 border-l-4 border-purple-400 flex-1"):
+                                ui.label("Эффективность").classes("text-sm text-gray-600")
+                                hit_rate = stats['hit_rate'] * 100
+                                ui.label(f"{hit_rate:.1f}%").classes("text-xl font-bold text-purple-600")
+                        
+                        # Статистика по источникам
+                        if stats['sources']:
+                            ui.label("Источники данных:").classes("text-sm font-semibold text-gray-700 mb-2")
+                            for source, count in stats['sources'].items():
+                                ui.label(f"• {source}: {count} записей").classes("text-sm text-gray-600")
+                        
+                    except Exception as e:
+                        ui.label(f"Ошибка загрузки статистики: {e}").classes("text-red-500")
+            
+            def preload_coins():
+                """Предзагружает популярные монеты"""
+                try:
+                    ui.notify("🔄 Начинаем предзагрузку монет...", type="info")
+                    loaded_count = preload_popular_coins()
+                    ui.notify(f"✅ Предзагружено {loaded_count} монет", type="positive")
+                    refresh_prices_stats()
+                except Exception as e:
+                    ui.notify(f"❌ Ошибка предзагрузки: {e}", type="negative")
+            
+            def clear_prices_cache():
+                """Очищает кэш цен"""
+                try:
+                    cleaned_count = clean_expired_cache()
+                    ui.notify(f"🗑️ Очищено {cleaned_count} устаревших записей", type="positive")
+                    refresh_prices_stats()
+                except Exception as e:
+                    ui.notify(f"❌ Ошибка очистки: {e}", type="negative")
+            
+            # Кнопки управления кэшем цен
+            with ui.row().classes("gap-2 mb-4"):
+                ui.button("🔄 Обновить", icon="refresh").classes("bg-blue-500 text-white").on("click", refresh_prices_stats)
+                ui.button("🗑️ Очистить устаревшие", icon="delete").classes("bg-red-500 text-white").on("click", clear_prices_cache)
+            
+            # Загружаем статистику при открытии
+            refresh_prices_stats()

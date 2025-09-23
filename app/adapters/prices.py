@@ -1,10 +1,91 @@
 import json
 import random
 import time
+from typing import Dict, Tuple, Optional
+from dataclasses import dataclass
 
 import httpx
 
-_cache: dict[tuple[str, str], tuple[float, float]] = {}
+@dataclass
+class CacheEntry:
+    """Запись в кэше с метаданными"""
+    price: float
+    timestamp: float
+    source: str
+    ttl: int = 300  # 5 минут по умолчанию
+
+# Улучшенный кэш с метаданными
+_cache: Dict[Tuple[str, str], CacheEntry] = {}
+
+# TTL для разных типов монет (в секундах)
+CACHE_TTL = {
+    'BTC': 600,    # 10 минут - стабильная монета
+    'ETH': 600,    # 10 минут - стабильная монета
+    'LINK': 300,   # 5 минут - средняя волатильность
+    'DEFAULT': 300 # 5 минут для остальных
+}
+
+def get_cache_ttl(symbol: str) -> int:
+    """Получить TTL для символа"""
+    return CACHE_TTL.get(symbol.upper(), CACHE_TTL['DEFAULT'])
+
+def is_cache_valid(entry: CacheEntry) -> bool:
+    """Проверить, действителен ли кэш"""
+    return time.time() - entry.timestamp < entry.ttl
+
+def get_cache_stats() -> Dict[str, any]:
+    """Получить статистику кэша"""
+    now = time.time()
+    total_entries = len(_cache)
+    valid_entries = sum(1 for entry in _cache.values() if is_cache_valid(entry))
+    expired_entries = total_entries - valid_entries
+    
+    # Статистика по источникам
+    sources = {}
+    for entry in _cache.values():
+        source = entry.source
+        sources[source] = sources.get(source, 0) + 1
+    
+    return {
+        'total_entries': total_entries,
+        'valid_entries': valid_entries,
+        'expired_entries': expired_entries,
+        'hit_rate': valid_entries / total_entries if total_entries > 0 else 0,
+        'sources': sources
+    }
+
+def clean_expired_cache():
+    """Очистить устаревшие записи из кэша"""
+    expired_keys = []
+    for key, entry in _cache.items():
+        if not is_cache_valid(entry):
+            expired_keys.append(key)
+    
+    for key in expired_keys:
+        del _cache[key]
+    
+    return len(expired_keys)
+
+def preload_popular_coins():
+    """Предзагрузить цены популярных монет"""
+    popular_coins = ['BTC', 'ETH', 'LINK', 'ADA', 'DOT', 'MATIC', 'AVAX', 'SOL']
+    
+    print("🔄 Предзагрузка популярных монет...")
+    loaded_count = 0
+    
+    for coin in popular_coins:
+        try:
+            price = get_current_price(coin)
+            if price:
+                loaded_count += 1
+                print(f"✅ {coin}: ${price:.2f}")
+            else:
+                print(f"❌ {coin}: не удалось загрузить")
+        except Exception as e:
+            print(f"❌ {coin}: ошибка - {e}")
+    
+    print(f"🎯 Предзагружено {loaded_count}/{len(popular_coins)} монет")
+    return loaded_count
 
 # Импортируем адаптер для акций
 from .stock_prices import StockPriceAdapter
@@ -114,9 +195,14 @@ def get_current_price(symbol: str, quote: str = "USD") -> float | None:
     key = (sym, q)
     now = time.time()
 
-    # Проверяем кэш (актуален 5 минут для улучшения производительности)
-    if key in _cache and now - _cache[key][1] < 300:
-        return _cache[key][0]
+    # Проверяем кэш с умным TTL
+    if key in _cache:
+        entry = _cache[key]
+        if is_cache_valid(entry):
+            return entry.price
+        else:
+            # Удаляем устаревшую запись
+            del _cache[key]
 
     # Получаем ID монеты для CoinGecko API
     coin_id = ID_MAP.get(sym, sym.lower())
@@ -141,8 +227,14 @@ def get_current_price(symbol: str, quote: str = "USD") -> float | None:
                 price = float(coin_data.get(q, 0.0))
 
                 if price > 0:
-                    # Сохраняем в кэш с временной меткой
-                    _cache[key] = (price, now)
+                    # Сохраняем в кэш с метаданными
+                    ttl = get_cache_ttl(sym)
+                    _cache[key] = CacheEntry(
+                        price=price,
+                        timestamp=now,
+                        source="CoinGecko",
+                        ttl=ttl
+                    )
                     return price
                 else:
                     print(f"⚠️ Получена нулевая цена для {sym}")

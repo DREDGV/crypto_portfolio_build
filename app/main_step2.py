@@ -13,9 +13,13 @@ sys.path.append(str(Path(__file__).parent.parent))
 from nicegui import ui
 from app.storage.db import init_db
 from app.ui.pages_step2 import portfolio_page, show_about_page
+# from app.core.notifications import start_notifications
 
 # Инициализация базы данных
 init_db()
+
+# Запуск системы уведомлений (временно отключено)
+# start_notifications()
 
 # Получаем настройки из переменных окружения
 DEV = os.getenv("DEV", "0") == "1"

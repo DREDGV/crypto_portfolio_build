@@ -48,8 +48,12 @@ from app.ui.cache_monitor import create_cache_monitor_tab
 # Импорт экспорта/импорта
 from app.ui.export_import import create_export_import_tab
 
-# Импорт упрощенной аналитики
+# Импорт аналитики
 from app.ui.analytics_simple import create_analytics_tab
+# from app.ui.advanced_analytics import create_advanced_analytics_tab
+
+# Импорт уведомлений (временно отключено)
+# from app.ui.notifications import create_notifications_tab
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
 TYPES = ["buy", "sell", "exchange_in", "exchange_out", "deposit", "withdrawal"]
@@ -977,6 +981,11 @@ def portfolio_page():
 
                 # Кнопки действий (только уникальные функции)
                 with ui.row().classes("items-center space-x-3"):
+                    # Кнопка уведомлений с бейджем
+                    with ui.button(icon="notifications", color="primary") as badge_btn:
+                        notification_badge = ui.badge("0", color="red").classes("absolute -top-2 -right-2")
+                        notification_badge.visible = False
+                    
                     # Кнопка настроек (уникальная для верхней панели)
                     ui.button("⚙️ Настройки", icon="settings").classes(
                         "bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg"
@@ -1018,8 +1027,12 @@ def portfolio_page():
                             create_alerts_tab()
                         elif current_tab_value == "analytics":
                             create_analytics_tab_local()
+                        # elif current_tab_value == "advanced_analytics":
+                        #     create_advanced_analytics_tab()
                         elif current_tab_value == "cache":
                             create_cache_monitor_tab()
+                        # elif current_tab_value == "notifications":
+                        #     create_notifications_tab()
                         elif current_tab_value == "export_import":
                             create_export_import_tab()
                 
@@ -1057,11 +1070,23 @@ def portfolio_page():
                         "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
                     ).on("click", lambda: switch_tab_with_styles("analytics"))
                     
+                    # Кнопка Расширенная аналитика (временно отключена)
+                    # tab_buttons["advanced_analytics"] = ui.button("📊 Графики").classes(
+                    #     "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                    #     "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    # ).on("click", lambda: switch_tab_with_styles("advanced_analytics"))
+                    
                     # Кнопка Кэш
                     tab_buttons["cache"] = ui.button("⚡ Кэш").classes(
                         "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
                         "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
                     ).on("click", lambda: switch_tab_with_styles("cache"))
+                    
+                    # Кнопка Уведомления (временно отключена)
+                    # tab_buttons["notifications"] = ui.button("🔔 Уведомления").classes(
+                    #     "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                    #     "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    # ).on("click", lambda: switch_tab_with_styles("notifications"))
                     
                     # Кнопка Экспорт/Импорт
                     tab_buttons["export_import"] = ui.button("📤📥 Экспорт").classes(
@@ -1077,10 +1102,116 @@ def portfolio_page():
                 
                 # Создаем функции для вкладок
                 def create_positions_tab():
-                    with ui.column().classes("w-full space-y-4"):
-                        ui.label("Позиции").classes("text-2xl font-bold text-gray-800")
-                        with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
-                            ui.label("Функция в разработке").classes("text-gray-500")
+                    with ui.column().classes("w-full h-full overflow-y-auto p-4"):
+                        ui.label("🪙 Позиции портфеля").classes("text-2xl font-bold text-gray-800 mb-4")
+                        
+                        # Кнопки управления
+                        with ui.row().classes("gap-3 mb-4"):
+                            ui.button("🔄 Обновить", icon="refresh").classes("bg-blue-500 text-white").on("click", lambda: refresh_positions_data())
+                            ui.button("📊 Аналитика", icon="analytics").classes("bg-green-500 text-white").on("click", lambda: switch_to_tab("analytics"))
+                        
+                        # Контейнер для позиций
+                        positions_container = ui.column().classes("w-full")
+                        
+                        def refresh_positions_data():
+                            positions_container.clear()
+                            with positions_container:
+                                try:
+                                    # Получаем обогащенные позиции
+                                    portfolio_stats = get_portfolio_stats()
+                                    positions = portfolio_stats.get('top_positions', [])
+                                    
+                                    if not positions:
+                                        with ui.card().classes("p-6 text-center bg-gray-50"):
+                                            ui.icon("inbox").classes("text-4xl text-gray-400 mb-2")
+                                            ui.label("Нет открытых позиций").classes("text-lg text-gray-500")
+                                            ui.label("Добавьте сделки для создания позиций").classes("text-sm text-gray-400")
+                                        return
+                                    
+                                    # Создаем таблицу позиций
+                                    with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                                        # Заголовок таблицы
+                                        with ui.row().classes("w-full bg-gray-100 p-3 rounded-t-lg font-semibold text-gray-700"):
+                                            ui.label("Монета").classes("flex-1")
+                                            ui.label("Количество").classes("flex-1")
+                                            ui.label("Средняя цена").classes("flex-1")
+                                            ui.label("Текущая цена").classes("flex-1")
+                                            ui.label("Стоимость").classes("flex-1")
+                                            ui.label("P&L").classes("flex-1")
+                                            ui.label("ROI").classes("flex-1")
+                                        
+                                        # Строки позиций
+                                        for pos in positions:
+                                            coin = pos['coin']
+                                            qty = pos.get('quantity', 0)
+                                            avg_cost = pos.get('avg_cost', 0)
+                                            current_price = pos.get('price', 0)
+                                            current_value = pos.get('value', 0)
+                                            pnl = pos.get('unreal_pnl', 0)
+                                            pnl_percent = pos.get('unreal_pct', 0)
+                                            
+                                            # Цветовая схема для P&L
+                                            pnl_color = "text-green-600" if pnl >= 0 else "text-red-600"
+                                            pnl_bg = "bg-green-50" if pnl >= 0 else "bg-red-50"
+                                            
+                                            with ui.row().classes(f"w-full p-3 border-b border-gray-200 hover:bg-gray-50 {pnl_bg}"):
+                                                # Монета
+                                                with ui.column().classes("flex-1"):
+                                                    ui.label(coin).classes("font-semibold text-gray-800")
+                                                    ui.label(pos.get('strategy', 'unknown')).classes("text-xs text-gray-500")
+                                                
+                                                # Количество
+                                                ui.label(f"{qty:.4f}").classes("flex-1 text-gray-700")
+                                                
+                                                # Средняя цена
+                                                ui.label(f"${avg_cost:.2f}").classes("flex-1 text-gray-700")
+                                                
+                                                # Текущая цена
+                                                ui.label(f"${current_price:.2f}").classes("flex-1 text-gray-700")
+                                                
+                                                # Стоимость
+                                                ui.label(f"${current_value:.2f}").classes("flex-1 font-semibold text-gray-800")
+                                                
+                                                # P&L
+                                                ui.label(f"${pnl:.2f}").classes(f"flex-1 font-semibold {pnl_color}")
+                                                
+                                                # ROI
+                                                ui.label(f"{pnl_percent:.1f}%").classes(f"flex-1 font-semibold {pnl_color}")
+                                    
+                                    # Сводная информация
+                                    totals = portfolio_stats.get('totals', {})
+                                    with ui.card().classes("p-4 bg-gradient-to-r from-blue-50 to-green-50 mt-4"):
+                                        ui.label("📊 Сводка позиций").classes("text-lg font-semibold text-blue-800 mb-3")
+                                        
+                                        with ui.row().classes("w-full gap-6"):
+                                            with ui.column().classes("flex-1 text-center"):
+                                                ui.label("Общая стоимость").classes("text-sm text-gray-500")
+                                                ui.label(f"${totals.get('total_value', 0):.2f}").classes("text-xl font-bold text-green-600")
+                                            
+                                            with ui.column().classes("flex-1 text-center"):
+                                                ui.label("Нереализованный P&L").classes("text-sm text-gray-500")
+                                                total_pnl = totals.get('total_unreal', 0)
+                                                pnl_color = "text-green-600" if total_pnl >= 0 else "text-red-600"
+                                                ui.label(f"${total_pnl:.2f}").classes(f"text-xl font-bold {pnl_color}")
+                                            
+                                            with ui.column().classes("flex-1 text-center"):
+                                                ui.label("ROI").classes("text-sm text-gray-500")
+                                                roi = totals.get('total_unreal_pct', 0)
+                                                roi_color = "text-green-600" if roi >= 0 else "text-red-600"
+                                                ui.label(f"{roi:.1f}%").classes(f"text-xl font-bold {roi_color}")
+                                            
+                                            with ui.column().classes("flex-1 text-center"):
+                                                ui.label("Позиций").classes("text-sm text-gray-500")
+                                                ui.label(f"{len(positions)}").classes("text-xl font-bold text-blue-600")
+                                
+                                except Exception as e:
+                                    with ui.card().classes("p-6 text-center bg-red-50"):
+                                        ui.icon("error").classes("text-4xl text-red-400 mb-2")
+                                        ui.label("Ошибка загрузки позиций").classes("text-lg text-red-600")
+                                        ui.label(f"Детали: {e}").classes("text-sm text-red-500")
+                        
+                        # Загружаем данные при открытии
+                        refresh_positions_data()
                 
                 def create_transactions_tab():
                     with ui.column().classes("w-full space-y-4"):
