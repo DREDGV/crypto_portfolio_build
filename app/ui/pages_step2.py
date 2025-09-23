@@ -901,7 +901,7 @@ def portfolio_page():
                     .on("click", lambda: switch_to_tab("analytics"))
                 )
 
-            # БЫСТРЫЕ ДЕЙСТВИЯ (остается без изменений)
+            # БЫСТРЫЕ ДЕЙСТВИЯ (улучшенная версия)
             with ui.column().classes("space-y-2 mt-6"):
                 ui.label("Быстрые действия").classes(
                     "text-sm font-semibold text-gray-300 uppercase tracking-wide"
@@ -911,7 +911,7 @@ def portfolio_page():
                 add_btn = (
                     ui.button("+ Добавить сделку", icon="add")
                     .classes(
-                        "w-full justify-start text-left bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-200"
+                        "w-full justify-start text-left bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg"
                     )
                     .on("click", lambda: open_enhanced_add_dialog())
                 )
@@ -975,23 +975,22 @@ def portfolio_page():
                         ui.label("Crypto Portfolio Manager").classes("text-xl font-bold text-gray-800")
                         ui.label("Управление криптовалютным портфелем").classes("text-sm text-gray-500")
 
-                # Кнопки действий
+                # Кнопки действий (только уникальные функции)
                 with ui.row().classes("items-center space-x-3"):
-                    ui.button("+ Добавить сделку", icon="add").classes(
-                        "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                    ).on("click", lambda: open_enhanced_add_dialog())
-                    
-                    ui.button("⚡ Быстрые действия", icon="flash_on").classes(
-                        "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
-                    ).on("click", lambda: ui.notify("Быстрые действия", color="info"))
-                    
-                    ui.button("🔄 Обновить данные", icon="refresh").classes(
-                        "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                    ).on("click", lambda: refresh())
-                    
-                    ui.button("ⓘ О программе", icon="info").classes(
+                    # Кнопка настроек (уникальная для верхней панели)
+                    ui.button("⚙️ Настройки", icon="settings").classes(
                         "bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg"
-                    ).on("click", lambda: ui.navigate.to("/about"))
+                    ).on("click", lambda: ui.notify("Настройки в разработке", color="info"))
+                    
+                    # Кнопка помощи (уникальная для верхней панели)
+                    ui.button("❓ Помощь", icon="help").classes(
+                        "bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg"
+                    ).on("click", lambda: ui.notify("Справка в разработке", color="info"))
+                    
+                    # Индикатор статуса (уникальная для верхней панели)
+                    with ui.row().classes("items-center gap-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200"):
+                        ui.icon("circle").classes("text-green-500 text-xs")
+                        ui.label("Онлайн").classes("text-sm text-green-700 font-medium")
 
             # Область контента с табами
             with ui.column().classes("flex-1 p-6 overflow-auto"):
@@ -1169,137 +1168,244 @@ def refresh():
 
 
 def show_about_page():
-    """Показывает страницу 'О программе' с информацией о версии и ченджлоге."""
-    from app.core.version import get_app_info
+    """Показывает страницу 'О программе' с удобной навигацией по разделам."""
+    from app.ui.about_page_new import show_about_page as show_new_about_page
+    show_new_about_page()
 
-    app_info = get_app_info()
+
+def create_alerts_tab():
+    ui.add_head_html('''
+    <style>
+    .about-page {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+    }
+    
+    .about-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0 0 20px 20px;
+        margin-bottom: 2rem;
+    }
+    
+    .about-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .about-card-header {
+        background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .about-card-content {
+        padding: 1.5rem;
+    }
+    
+    .about-tabs {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+    
+    .about-content {
+        font-size: 14px;
+        line-height: 1.7;
+        color: #374151;
+    }
+    
+    .about-content h1 {
+        font-size: 1.75rem !important;
+        font-weight: 700 !important;
+        margin: 1.5rem 0 1rem 0 !important;
+        color: #1f2937 !important;
+        border-bottom: 2px solid #e5e7eb !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    .about-content h2 {
+        font-size: 1.4rem !important;
+        font-weight: 600 !important;
+        margin: 1.2rem 0 0.8rem 0 !important;
+        color: #374151 !important;
+        background: #f8fafc !important;
+        padding: 0.5rem 1rem !important;
+        border-left: 4px solid #3b82f6 !important;
+        border-radius: 4px !important;
+    }
+    
+    .about-content h3 {
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        margin: 1rem 0 0.6rem 0 !important;
+        color: #4b5563 !important;
+    }
+    
+    .about-content p {
+        font-size: 14px !important;
+        margin: 0.8rem 0 !important;
+        line-height: 1.7 !important;
+        color: #4b5563 !important;
+    }
+    
+    .about-content ul {
+        font-size: 14px !important;
+        margin: 0.8rem 0 !important;
+        padding-left: 1.5rem !important;
+    }
+    
+    .about-content li {
+        font-size: 14px !important;
+        margin: 0.4rem 0 !important;
+        line-height: 1.6 !important;
+        color: #4b5563 !important;
+    }
+    
+    .about-content strong {
+        font-weight: 600 !important;
+        color: #1f2937 !important;
+    }
+    
+    .about-content code {
+        background: #f1f5f9 !important;
+        padding: 0.2rem 0.4rem !important;
+        border-radius: 4px !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 13px !important;
+        color: #e11d48 !important;
+    }
+    
+    .version-badge {
+        background: linear-gradient(45deg, #10b981, #059669);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        margin: 0.5rem 0;
+    }
+    
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .feature-item {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #3b82f6;
+    }
+    /* Полноэкранная типографика для markdown */
+    .about-markdown { 
+        width: 100% !important;
+        max-width: none !important;
+        padding: 0 24px !important;
+        font-size: 16px !important; 
+        line-height: 1.8 !important; 
+        color: #111827 !important;
+    }
+    .about-markdown h1 { font-size: 2rem !important; margin: 1.25rem 0 .75rem 0 !important; font-weight: 700 !important; }
+    .about-markdown h2 { font-size: 1.5rem !important; margin: 1rem 0 .5rem 0 !important; font-weight: 600 !important; }
+    .about-markdown h3 { font-size: 1.25rem !important; margin: .75rem 0 .4rem 0 !important; font-weight: 600 !important; }
+    .about-markdown p { margin: .6rem 0 !important; }
+    .about-markdown ul, .about-markdown ol { margin: .6rem 0 .6rem 1.25rem !important; }
+    .about-markdown li { margin: .35rem 0 !important; }
+    .about-markdown code { background:#f3f4f6 !important; padding:.15rem .35rem !important; border-radius:4px !important; }
+    .about-markdown table { border-collapse: collapse; width: 100%; margin: .8rem 0; }
+    .about-markdown th, .about-markdown td { border: 1px solid #e5e7eb; padding: .5rem .6rem; }
+    .about-markdown blockquote { border-left:4px solid #e5e7eb; padding-left:.8rem; color:#4b5563; margin:.8rem 0; }
+    </style>
+    ''')
 
     # Создаем полноэкранный контент
-    with ui.column().classes("w-full h-screen overflow-hidden"):
-        # Заголовок страницы
-        with ui.row().classes(
-            "items-center justify-between mb-1 p-2 bg-blue-50 border-b"
-        ):
-            with ui.row().classes("items-center gap-2"):
-                ui.icon("info").classes("text-base text-blue-600")
-                ui.label("О программе").classes("text-base font-bold text-gray-800")
-            ui.button(icon="arrow_back").props("flat round").on(
-                "click", lambda: ui.navigate.to("/")
-            )
+    with ui.column().classes("w-full h-screen overflow-hidden about-page"):
+        # Профессиональный заголовок
+        with ui.column().classes("about-header"):
+            with ui.row().classes("items-center justify-between mb-4"):
+                with ui.row().classes("items-center gap-3"):
+                    ui.icon("account_balance_wallet").classes("text-3xl")
+                    with ui.column().classes("gap-1"):
+                        ui.label(f"{app_info['name']}").classes("text-2xl font-bold")
+                        ui.label("Профессиональное управление криптовалютным портфелем").classes("text-lg opacity-90")
+                ui.button(icon="arrow_back", color="white").props("flat round").on(
+                    "click", lambda: ui.navigate.to("/")
+                )
+            
+            with ui.row().classes("items-center gap-4"):
+                ui.label(f"Версия {app_info['version']}").classes("version-badge")
+                ui.label("•").classes("text-white opacity-50")
+                ui.label("Python + NiceGUI").classes("text-white opacity-90")
+                ui.label("•").classes("text-white opacity-50")
+                ui.label("SQLite + SQLModel").classes("text-white opacity-90")
 
-        # Содержимое с табами
-        with ui.tabs().classes("w-full text-xs px-2 py-0") as tabs:
-            ui.tab("Общая информация", icon="info").classes("px-2 py-1 text-xs")
-            ui.tab("История изменений", icon="history").classes("px-2 py-1 text-xs")
-            ui.tab("Концепция", icon="lightbulb").classes("px-2 py-1 text-xs")
-            ui.tab("Планы развития", icon="trending_up").classes("px-2 py-1 text-xs")
+        # Содержимое с профессиональными табами (на всю ширину и высоту)
+        with ui.column().classes("px-0 pb-6 flex-1 overflow-y-auto w-full"):
+            with ui.tabs().classes("about-tabs") as tabs:
+                ui.tab("📋 Общая информация", icon="info")
+                ui.tab("📝 История изменений", icon="history")
+                ui.tab("💡 Концепция", icon="lightbulb")
+                ui.tab("🚀 Планы развития", icon="trending_up")
 
-        with ui.tab_panels(tabs, value="Общая информация").classes(
-            "w-full h-[calc(100vh-60px)]"
-        ):
-            # Общая информация
-            with ui.tab_panel("Общая информация"):
-                with ui.scroll_area().classes("h-full w-full"):
-                    with ui.column().classes("p-6 space-y-4"):
-                        # Основная информация
-                        with ui.card().classes(
-                            "p-4 bg-gradient-to-r from-blue-50 to-indigo-50"
-                        ):
-                            ui.label(f"📱 {app_info['name']}").classes(
-                                "text-base font-bold text-blue-800"
-                            )
-                            ui.label(f"🔢 Версия: {app_info['version']}").classes(
-                                "text-sm text-gray-700"
-                            )
-                            ui.label(f"📝 {app_info['description']}").classes(
-                                "text-sm text-gray-600"
-                            )
+            with ui.tab_panels(tabs, value="📋 Общая информация").classes("w-full"):
+                # Общая информация: полноформатный просмотр README.md
+                with ui.tab_panel("📋 Общая информация"):
+                    with ui.scroll_area().classes("w-full"):
+                        with ui.column().classes("p-6 w-full"):
+                            try:
+                                from pathlib import Path as _P
+                                readme_path = _P(__file__).resolve().parents[3] / "README.md"
+                                readme_text = readme_path.read_text(encoding="utf-8") if readme_path.exists() else f"# {app_info['name']}\n\n{app_info['description']}\n\nВерсия: {app_info['version']}"
+                            except Exception:
+                                readme_text = f"# {app_info['name']}\n\n{app_info['description']}\n\nВерсия: {app_info['version']}"
+                            ui.markdown(readme_text).classes("about-markdown")
 
-                        # Технические детали
-                        with ui.card().classes("p-4"):
-                            ui.label("🔧 Технические детали").classes(
-                                "text-sm font-semibold mb-2"
-                            )
-                            with ui.column().classes("space-y-1 text-sm"):
-                                ui.label("• Архитектура: Clean Architecture")
-                                ui.label("• База данных: SQLite с SQLModel")
-                                ui.label("• UI: NiceGUI с современным дизайном")
-                                ui.label("• API: Множественные источники цен")
-                                ui.label("• Экспорт: CSV форматы")
+                # История изменений
+                with ui.tab_panel("📝 История изменений"):
+                    with ui.scroll_area().classes("w-full"):
+                        with ui.column().classes("p-6 w-full"):
+                            changelog_text = app_info.get("changelog", "Ченджлог недоступен")
+                            if changelog_text and changelog_text != "Ченджлог недоступен":
+                                ui.markdown(changelog_text).classes("about-markdown")
+                            else:
+                                with ui.card().classes("about-card"):
+                                    ui.label("📝 История изменений").classes("text-lg font-semibold mb-2")
+                                    ui.label("Ченджлог загружается...").classes("text-gray-600")
 
-                        # Источники данных
-                        with ui.card().classes("p-4"):
-                            ui.label("📊 Источники данных").classes(
-                                "text-sm font-semibold mb-2"
-                            )
-                            with ui.column().classes("space-y-1 text-sm"):
-                                ui.label("• CoinGecko (основной)")
-                                ui.label("• Binance, Coinbase, Kraken")
-                                ui.label("• OKX, CoinPaprika")
-                                ui.label("• CoinMarketCap (готов к подключению)")
+                # Концепция
+                with ui.tab_panel("💡 Концепция"):
+                    with ui.scroll_area().classes("w-full"):
+                        with ui.column().classes("p-6 w-full"):
+                            concept_text = app_info.get("concept", "Концепция недоступна")
+                            if concept_text and concept_text != "Концепция недоступна":
+                                ui.markdown(concept_text).classes("about-markdown")
+                            else:
+                                with ui.card().classes("about-card"):
+                                    ui.label("💡 Концепция").classes("text-lg font-semibold mb-2")
+                                    ui.label("Концепция загружается...").classes("text-gray-600")
 
-            # История изменений
-            with ui.tab_panel("История изменений"):
-                with ui.scroll_area().classes("h-full w-full"):
-                    with ui.column().classes("p-4"):
-                        ui.html(
-                            f"""
-                        <style>
-                        .about-content h1 {{ font-size: 1.5rem !important; font-weight: 700 !important; margin: 1rem 0 0.5rem 0 !important; color: #1f2937 !important; }}
-                        .about-content h2 {{ font-size: 1.3rem !important; font-weight: 600 !important; margin: 0.8rem 0 0.4rem 0 !important; color: #374151 !important; }}
-                        .about-content h3 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.6rem 0 0.3rem 0 !important; color: #4b5563 !important; }}
-                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; line-height: 1.5 !important; }}
-                        .about-content ul {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
-                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; line-height: 1.4 !important; }}
-                        .about-content strong {{ font-weight: 600 !important; }}
-                        </style>
-                        <div class="about-content">
-                        {app_info["changelog"]}
-                        </div>
-                        """
-                        )
-
-            # Концепция
-            with ui.tab_panel("Концепция"):
-                with ui.scroll_area().classes("h-full w-full"):
-                    with ui.column().classes("p-4"):
-                        ui.html(
-                            f"""
-                        <style>
-                        .about-content h1 {{ font-size: 1.5rem !important; font-weight: 700 !important; margin: 1rem 0 0.5rem 0 !important; color: #1f2937 !important; }}
-                        .about-content h2 {{ font-size: 1.3rem !important; font-weight: 600 !important; margin: 0.8rem 0 0.4rem 0 !important; color: #374151 !important; }}
-                        .about-content h3 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.6rem 0 0.3rem 0 !important; color: #4b5563 !important; }}
-                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; line-height: 1.5 !important; }}
-                        .about-content ul {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
-                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; line-height: 1.4 !important; }}
-                        .about-content strong {{ font-weight: 600 !important; }}
-                        </style>
-                        <div class="about-content">
-                        {app_info["concept"]}
-                        </div>
-                        """
-                        )
-
-            # Планы развития
-            with ui.tab_panel("Планы развития"):
-                with ui.scroll_area().classes("h-full w-full"):
-                    with ui.column().classes("p-4"):
-                        ui.html(
-                            f"""
-                        <style>
-                        .about-content h1 {{ font-size: 1.5rem !important; font-weight: 700 !important; margin: 1rem 0 0.5rem 0 !important; color: #1f2937 !important; }}
-                        .about-content h2 {{ font-size: 1.3rem !important; font-weight: 600 !important; margin: 0.8rem 0 0.4rem 0 !important; color: #374151 !important; }}
-                        .about-content h3 {{ font-size: 1.1rem !important; font-weight: 600 !important; margin: 0.6rem 0 0.3rem 0 !important; color: #4b5563 !important; }}
-                        .about-content p {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; line-height: 1.5 !important; }}
-                        .about-content ul {{ font-size: 0.875rem !important; margin: 0.3rem 0 !important; }}
-                        .about-content li {{ font-size: 0.875rem !important; margin: 0.2rem 0 !important; line-height: 1.4 !important; }}
-                        .about-content strong {{ font-weight: 600 !important; }}
-                        </style>
-                        <div class="about-content">
-                        {app_info["roadmap"]}
-                        </div>
-                        """
-                        )
+                # Планы развития
+                with ui.tab_panel("🚀 Планы развития"):
+                    with ui.scroll_area().classes("w-full"):
+                        with ui.column().classes("p-6 w-full"):
+                            roadmap_text = app_info.get("roadmap", "Планы недоступны")
+                            if roadmap_text and roadmap_text != "Планы недоступны":
+                                ui.markdown(roadmap_text).classes("about-markdown")
+                            else:
+                                with ui.card().classes("about-card"):
+                                    ui.label("🚀 Планы развития").classes("text-lg font-semibold mb-2")
+                                    ui.label("Планы загружаются...").classes("text-gray-600")
 
 
 def create_alerts_tab():
