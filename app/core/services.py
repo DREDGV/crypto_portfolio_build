@@ -10,6 +10,13 @@ from sqlmodel import Session, select
 from app.adapters.prices import get_current_price
 from app.core.models import Transaction, TransactionIn, SourceMeta, PriceAlert, PriceAlertIn
 from app.storage.db import DB_PATH, engine
+from app.core.cache import (
+    cached, cache_portfolio_stats, get_cached_portfolio_stats,
+    cache_transactions, get_cached_transactions,
+    cache_sources, get_cached_sources,
+    cache_price_alerts, get_cached_price_alerts,
+    invalidate_data_cache
+)
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
 
@@ -26,6 +33,10 @@ def add_transaction(data: TransactionIn) -> int:
         session.add(t)
         session.commit()
         session.refresh(t)
+        
+        # Инвалидируем кэш после добавления транзакции
+        invalidate_data_cache()
+        
         return t.id
 
 
@@ -72,6 +83,11 @@ def delete_transaction(tx_id: int) -> None:
 
 
 def list_transactions() -> list[dict]:
+    # Пытаемся получить из кэша
+    cached_result = get_cached_transactions()
+    if cached_result is not None:
+        return cached_result
+    
     with Session(engine) as session:
         items = session.exec(select(Transaction).order_by(Transaction.id.desc())).all()
     rows = []
@@ -90,6 +106,10 @@ def list_transactions() -> list[dict]:
                 "notes": t.notes or "",
             }
         )
+    
+    # Кэшируем результат
+    cache_transactions(rows)
+    
     return rows
 
 
@@ -264,6 +284,11 @@ def export_positions_csv(positions: list[dict]) -> str:
 
 def get_portfolio_stats() -> dict:
     """Возвращает детальную статистику портфеля"""
+    # Пытаемся получить из кэша
+    cached_result = get_cached_portfolio_stats()
+    if cached_result is not None:
+        return cached_result
+    
     positions = positions_fifo()
     enriched, totals = enrich_positions_with_market(positions)
 
@@ -311,7 +336,7 @@ def get_portfolio_stats() -> dict:
     total_coins = len(coin_stats)
     total_strategies = len(strategy_stats)
 
-    return {
+    result = {
         "totals": totals,
         "coin_stats": coin_stats,
         "strategy_stats": strategy_stats,
@@ -322,6 +347,11 @@ def get_portfolio_stats() -> dict:
             "total_strategies": total_strategies,
         },
     }
+    
+    # Кэшируем результат
+    cache_portfolio_stats(result)
+    
+    return result
 
 
 def get_transaction_stats() -> dict:
@@ -529,6 +559,11 @@ def import_sources_meta_from_json_str(json_str: str) -> bool:
 
 def get_sources_with_frequency() -> list[tuple[str, int]]:
     """Получает источники с частотой использования"""
+    # Пытаемся получить из кэша
+    cached_result = get_cached_sources()
+    if cached_result is not None:
+        return cached_result
+    
     try:
         with Session(engine) as session:
             # Получаем все источники из транзакций
@@ -567,6 +602,9 @@ def get_sources_with_frequency() -> list[tuple[str, int]]:
             
             sorted_sources = sorted(source_counts.items(), key=sort_key)
             
+            # Кэшируем результат
+            cache_sources(sorted_sources)
+            
             return sorted_sources
     except Exception as e:
         print(f"Ошибка получения источников: {e}")
@@ -588,15 +626,16 @@ def update_source_name(old_name: str, new_name: str) -> bool:
             statement = select(Transaction).where(Transaction.source == old_name)
             transactions = session.exec(statement).all()
             
-            print(f"DEBUG: Найдено {len(transactions)} транзакций с источником '{old_name}'")
             
             # Обновляем название источника в транзакциях
             for tx in transactions:
-                print(f"DEBUG: Обновляем транзакцию {tx.id}: {old_name} -> {new_name}")
                 tx.source = new_name
             
             session.commit()
-            print(f"DEBUG: Успешно обновлено {len(transactions)} транзакций")
+            
+            # Инвалидируем кэш после изменения источников
+            invalidate_data_cache()
+            
             return True
     except Exception as e:
         print(f"Ошибка обновления источника: {e}")
@@ -625,15 +664,16 @@ def delete_source_from_transactions(source_name: str) -> bool:
             statement = select(Transaction).where(Transaction.source == source_name)
             transactions = session.exec(statement).all()
             
-            print(f"DEBUG: Найдено {len(transactions)} транзакций с источником '{source_name}' для удаления")
             
             # Удаляем источник (устанавливаем в None)
             for tx in transactions:
-                print(f"DEBUG: Удаляем источник из транзакции {tx.id}")
                 tx.source = None
             
             session.commit()
-            print(f"DEBUG: Успешно удален источник из {len(transactions)} транзакций")
+            
+            # Инвалидируем кэш после удаления источника
+            invalidate_data_cache()
+            
             return True
     except Exception as e:
         print(f"Ошибка удаления источника: {e}")
@@ -653,7 +693,6 @@ def move_source_up(source_name: str) -> bool:
                 break
         
         if current_index is None or current_index == 0:
-            print(f"DEBUG: Источник '{source_name}' не найден или уже вверху")
             return False
         
         # Меняем порядок в метаданных
@@ -670,7 +709,6 @@ def move_source_up(source_name: str) -> bool:
                 session.add(meta)
             session.commit()
         
-        print(f"DEBUG: Источник '{source_name}' перемещен вверх")
         return True
     except Exception as e:
         print(f"Ошибка перемещения источника вверх: {e}")
@@ -689,7 +727,6 @@ def move_source_down(source_name: str) -> bool:
                 break
         
         if current_index is None or current_index == len(sources) - 1:
-            print(f"DEBUG: Источник '{source_name}' не найден или уже внизу")
             return False
         
         # Меняем порядок в метаданных
@@ -704,7 +741,6 @@ def move_source_down(source_name: str) -> bool:
                 session.add(meta)
             session.commit()
         
-        print(f"DEBUG: Источник '{source_name}' перемещен вниз")
         return True
     except Exception as e:
         print(f"Ошибка перемещения источника вниз: {e}")
@@ -742,7 +778,6 @@ def add_price_alert(data: PriceAlertIn) -> int:
             session.add(alert)
             session.commit()
             session.refresh(alert)
-            print(f"DEBUG: Создан алерт для {data.coin} {data.alert_type} {data.target_price}")
             return alert.id
     except Exception as e:
         print(f"Ошибка создания алерта: {e}")
@@ -777,7 +812,6 @@ def update_price_alert(alert_id: int, **updates) -> bool:
             
             session.add(alert)
             session.commit()
-            print(f"DEBUG: Обновлен алерт {alert_id}")
             return True
     except Exception as e:
         print(f"Ошибка обновления алерта: {e}")
@@ -794,7 +828,6 @@ def delete_price_alert(alert_id: int) -> bool:
             
             session.delete(alert)
             session.commit()
-            print(f"DEBUG: Удален алерт {alert_id}")
             return True
     except Exception as e:
         print(f"Ошибка удаления алерта: {e}")
@@ -838,7 +871,6 @@ def check_price_alerts() -> list[dict]:
                             "notes": alert.notes
                         })
                         
-                        print(f"DEBUG: Сработал алерт {alert.id} для {alert.coin}: {current_price} {alert.alert_type} {alert.target_price}")
                 
                 except Exception as e:
                     print(f"Ошибка проверки алерта {alert.id}: {e}")

@@ -42,6 +42,15 @@ from app.core.services import (
 #     get_portfolio_summary,
 # )
 
+# Импорт мониторинга кэша
+from app.ui.cache_monitor import create_cache_monitor_tab
+
+# Импорт экспорта/импорта
+from app.ui.export_import import create_export_import_tab
+
+# Импорт упрощенной аналитики
+from app.ui.analytics_simple import create_analytics_tab
+
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
 TYPES = ["buy", "sell", "exchange_in", "exchange_out", "deposit", "withdrawal"]
 STRATS = ["long", "mid", "short", "scalp"]
@@ -153,16 +162,13 @@ def open_enhanced_add_dialog():
 
         def edit_source_name(old_name, mgmt_dialog, refresh_func):
             """Редактирует название источника"""
-            print(f"DEBUG: Открываем диалог редактирования для источника: {old_name}")
             with ui.dialog() as edit_dialog, ui.card().classes("p-6"):
                 ui.label(f"Редактировать: {old_name}").classes("text-lg font-semibold mb-4")
                 
                 new_name_input = ui.input("Новое название", value=old_name).classes("w-full mb-4")
                 
                 def save_changes():
-                    print("DEBUG: Начало функции save_changes()")
                     new_name = new_name_input.value.strip()
-                    print(f"DEBUG: Новое название: '{new_name}'")
                     
                     if not new_name:
                         ui.notify("Название не может быть пустым", type="negative")
@@ -173,16 +179,13 @@ def open_enhanced_add_dialog():
                         edit_dialog.close()
                         return
                     
-                    print(f"DEBUG: Обновляем источник '{old_name}' -> '{new_name}'")
                     # Обновляем в базе данных
                     success = update_source_name(old_name, new_name)
-                    print(f"DEBUG: Результат обновления: {success}")
                     
                     if success:
                         ui.notify(f"Источник переименован: {old_name} -> {new_name}", type="positive")
                         edit_dialog.close()
                         # Принудительно обновляем список
-                        print("DEBUG: Вызываем refresh_func() после успешного сохранения")
                         refresh_func()
                         # Без принудительного перезагруза страницы: UI обновится через refresh_both()
                     else:
@@ -270,14 +273,11 @@ def open_enhanced_add_dialog():
                 """Обновляет список источников в диалоге"""
                 nonlocal sources_container
                 if sources_container:
-                    print("DEBUG: Обновляем список источников...")
                     # Получаем обновленные источники
                     sources_with_freq = get_sources_with_frequency()
-                    print(f"DEBUG: Получено {len(sources_with_freq)} источников: {sources_with_freq}")
                     
                     # Очищаем контейнер и пересоздаем содержимое
                     sources_container.clear()
-                    print("DEBUG: Контейнер очищен")
                     
                     # Пересоздаем все элементы
                     for i, (source_name, frequency) in enumerate(sources_with_freq):
@@ -300,7 +300,6 @@ def open_enhanced_add_dialog():
                                         ui.button("⬆️", on_click=lambda s=source_name: move_source_up(s, mgmt_dialog, refresh_both)).props("size=sm flat").classes("text-green-600")
                                     if i < len(sources_with_freq) - 1:
                                         ui.button("⬇️", on_click=lambda s=source_name: move_source_down(s, mgmt_dialog, refresh_both)).props("size=sm flat").classes("text-green-600")
-                    print("DEBUG: Список источников обновлен")
 
             # Обновляет и выпадающий список в форме, и список в диалоге
             def refresh_both():
@@ -770,42 +769,78 @@ def portfolio_page():
     """Главная страница портфеля с улучшенными карточками и полным функционалом ввода"""
     from app.core.version import get_app_info
     
-    # Добавляем CSS стили для современных вкладок
+    # Добавляем CSS стили для стабильных вкладок
     ui.add_head_html('''
     <style>
-    /* Стили для активных вкладок */
+    /* Принудительная фиксация позиций вкладок */
+    .q-tabs__content {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+        overflow: visible !important;
+        position: relative !important;
+    }
+    
+    /* Фиксированная ширина и позиция каждой вкладки */
+    .q-tab {
+        flex: 0 0 auto !important;
+        width: 140px !important;
+        min-width: 140px !important;
+        max-width: 140px !important;
+        text-align: center !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 12px 16px !important;
+        margin: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        transition: all 0.2s ease !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Стили для активной вкладки */
     .q-tab--active {
         color: #2563eb !important;
-        border-bottom-color: #2563eb !important;
         background-color: #eff6ff !important;
+        border-bottom: 2px solid #2563eb !important;
+        font-weight: 600 !important;
     }
     
-    /* Стили для hover эффектов */
-    .q-tab:hover {
-        background-color: #f8fafc !important;
-        transform: translateY(-1px);
+    /* Стили для неактивных вкладок */
+    .q-tab:not(.q-tab--active) {
+        color: #6b7280 !important;
+        background-color: transparent !important;
+        border-bottom: 2px solid transparent !important;
     }
     
-    /* Фиксированная ширина вкладок */
-    .q-tab {
-        min-width: 120px !important;
-        text-align: center !important;
-        transition: all 0.2s ease !important;
+    /* Hover эффекты */
+    .q-tab:hover:not(.q-tab--active) {
+        color: #374151 !important;
+        background-color: #f9fafb !important;
+        border-bottom: 2px solid #d1d5db !important;
     }
     
-    /* Убираем смещение при активации */
-    .q-tabs__content {
-        overflow: visible !important;
-    }
-    
-    /* Стили для контейнера вкладок */
+    /* Контейнер вкладок */
     .q-tabs {
         border-bottom: 1px solid #e5e7eb !important;
+        background: white !important;
+        position: relative !important;
     }
     
-    /* Улучшенные стили для иконок */
+    /* Убираем все возможные смещения */
+    .q-tab__content {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+    }
+    
+    /* Фиксируем иконки */
     .q-tab .q-icon {
-        margin-right: 8px !important;
+        margin-right: 6px !important;
+        font-size: 16px !important;
     }
     </style>
     ''')
@@ -960,79 +995,155 @@ def portfolio_page():
 
             # Область контента с табами
             with ui.column().classes("flex-1 p-6 overflow-auto"):
-                # Современные табы с фиксированным дизайном
-                with ui.tabs().classes("w-full mb-6") as tabs:
-                    ui.tab("overview", "📊 Обзор")
-                    ui.tab("positions", "💼 Позиции") 
-                    ui.tab("transactions", "📝 Сделки")
-                    # ui.tab("charts", "📈 Графики")  # Временно отключено
-                    ui.tab("alerts", "🔔 Алерты")
-                    ui.tab("analytics", "📈 Аналитика")
-
-                with ui.tab_panels(tabs, value="overview").classes("w-full"):
-                    # Вкладка обзора с улучшенными карточками
-                    with ui.tab_panel("overview"):
-                        create_overview_tab()
-
-                    # Остальные вкладки остаются без изменений
-                    with ui.tab_panel("positions"):
-                        with ui.column().classes("w-full space-y-4"):
-                            ui.label("Позиции").classes("text-2xl font-bold text-gray-800")
-                            with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
-                                ui.label("Таблица позиций").classes("text-lg font-semibold text-gray-800 mb-4")
-                                with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
-                                    ui.label("Нет позиций").classes("text-gray-500")
-
-                    with ui.tab_panel("transactions"):
-                        with ui.column().classes("w-full space-y-4"):
-                            ui.label("Сделки").classes("text-2xl font-bold text-gray-800")
-                            with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
-                                ui.label("Таблица сделок").classes("text-lg font-semibold text-gray-800 mb-4")
-                                
-                                # Получаем список сделок
-                                try:
-                                    transactions = list_transactions()
-                                    if transactions:
-                                        # Создаем таблицу сделок
-                                        columns = [
-                                            {"name": "id", "label": "ID", "field": "id", "sortable": True},
-                                            {"name": "coin", "label": "Монета", "field": "coin", "sortable": True},
-                                            {"name": "type", "label": "Тип", "field": "type", "sortable": True},
-                                            {"name": "quantity", "label": "Количество", "field": "quantity", "sortable": True},
-                                            {"name": "price", "label": "Цена", "field": "price", "sortable": True},
-                                            {"name": "source", "label": "Источник", "field": "source", "sortable": True},
-                                            {"name": "strategy", "label": "Стратегия", "field": "strategy", "sortable": True},
-                                            {"name": "created_at", "label": "Дата", "field": "created_at", "sortable": True},
-                                            {"name": "notes", "label": "Заметки", "field": "notes", "sortable": True},
-                                        ]
-                                        
-                                        ui.table(
-                                            columns=columns,
-                                            rows=transactions,
-                                            row_key="id"
-                                        ).classes("w-full")
-                                    else:
-                                        with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
-                                            ui.label("Нет сделок").classes("text-gray-500")
-                                except Exception as e:
+                # Создаем стабильные вкладки с помощью кнопок
+                current_tab_value = "overview"
+                
+                def switch_tab(tab_name):
+                    nonlocal current_tab_value
+                    current_tab_value = tab_name
+                    update_tab_content()
+                
+                def update_tab_content():
+                    # Очищаем контент
+                    content_container.clear()
+                    
+                    # Добавляем соответствующий контент
+                    with content_container:
+                        if current_tab_value == "overview":
+                            create_overview_tab()
+                        elif current_tab_value == "positions":
+                            create_positions_tab()
+                        elif current_tab_value == "transactions":
+                            create_transactions_tab()
+                        elif current_tab_value == "alerts":
+                            create_alerts_tab()
+                        elif current_tab_value == "analytics":
+                            create_analytics_tab_local()
+                        elif current_tab_value == "cache":
+                            create_cache_monitor_tab()
+                        elif current_tab_value == "export_import":
+                            create_export_import_tab()
+                
+                # Создаем кнопки-вкладки
+                with ui.row().classes("w-full mb-6 border-b border-gray-200 bg-white"):
+                    tab_buttons = {}
+                    
+                    # Кнопка Обзор
+                    tab_buttons["overview"] = ui.button("📊 Обзор").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("overview"))
+                    
+                    # Кнопка Позиции
+                    tab_buttons["positions"] = ui.button("💼 Позиции").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("positions"))
+                    
+                    # Кнопка Сделки
+                    tab_buttons["transactions"] = ui.button("📝 Сделки").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("transactions"))
+                    
+                    # Кнопка Алерты
+                    tab_buttons["alerts"] = ui.button("🔔 Алерты").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("alerts"))
+                    
+                    # Кнопка Аналитика
+                    tab_buttons["analytics"] = ui.button("📈 Аналитика").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("analytics"))
+                    
+                    # Кнопка Кэш
+                    tab_buttons["cache"] = ui.button("⚡ Кэш").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("cache"))
+                    
+                    # Кнопка Экспорт/Импорт
+                    tab_buttons["export_import"] = ui.button("📤📥 Экспорт").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("export_import"))
+                
+                # Контейнер для контента
+                content_container = ui.column().classes("w-full")
+                
+                # Инициализируем контент
+                update_tab_content()
+                
+                # Создаем функции для вкладок
+                def create_positions_tab():
+                    with ui.column().classes("w-full space-y-4"):
+                        ui.label("Позиции").classes("text-2xl font-bold text-gray-800")
+                        with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                            ui.label("Функция в разработке").classes("text-gray-500")
+                
+                def create_transactions_tab():
+                    with ui.column().classes("w-full space-y-4"):
+                        ui.label("Сделки").classes("text-2xl font-bold text-gray-800")
+                        with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
+                            # Получаем список сделок
+                            try:
+                                transactions = list_transactions()
+                                if transactions:
+                                    # Создаем таблицу сделок
+                                    columns = [
+                                        {"name": "id", "label": "ID", "field": "id", "sortable": True},
+                                        {"name": "coin", "label": "Монета", "field": "coin", "sortable": True},
+                                        {"name": "type", "label": "Тип", "field": "type", "sortable": True},
+                                        {"name": "quantity", "label": "Количество", "field": "quantity", "sortable": True},
+                                        {"name": "price", "label": "Цена", "field": "price", "sortable": True},
+                                        {"name": "source", "label": "Источник", "field": "source", "sortable": True},
+                                        {"name": "strategy", "label": "Стратегия", "field": "strategy", "sortable": True},
+                                        {"name": "created_at", "label": "Дата", "field": "created_at", "sortable": True},
+                                        {"name": "notes", "label": "Заметки", "field": "notes", "sortable": True},
+                                    ]
+                                    
+                                    ui.table(
+                                        columns=columns,
+                                        rows=transactions,
+                                        row_key="id"
+                                    ).classes("w-full")
+                                else:
                                     with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
-                                        ui.label(f"Ошибка загрузки: {e}").classes("text-red-500")
-
-                    # Вкладка графиков (временно отключена)
-                    # with ui.tab_panel("charts"):
-                    #     create_charts_tab()
-
-                    # Вкладка алертов
-                    with ui.tab_panel("alerts"):
-                        create_alerts_tab()
-
-                    with ui.tab_panel("analytics"):
-                        with ui.column().classes("w-full space-y-4"):
-                            ui.label("Аналитика").classes("text-2xl font-bold text-gray-800")
-                            with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
-                                ui.label("Графики и метрики").classes("text-lg font-semibold text-gray-800 mb-4")
+                                        ui.label("Нет сделок").classes("text-gray-500")
+                            except Exception as e:
                                 with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
-                                    ui.label("Аналитика в разработке").classes("text-gray-500")
+                                    ui.label(f"Ошибка загрузки: {e}").classes("text-red-500")
+                
+                def create_analytics_tab_local():
+                    # Используем новую функцию аналитики
+                    create_analytics_tab()
+                
+                # Обновляем стили кнопок при переключении
+                def update_tab_styles():
+                    for tab_name, button in tab_buttons.items():
+                        if tab_name == current_tab_value:
+                            # Активная вкладка
+                            button.classes(
+                                "px-6 py-3 text-sm font-semibold border-b-2 border-blue-500 "
+                                "text-blue-600 bg-blue-50 transition-all duration-200 min-w-[140px]"
+                            )
+                        else:
+                            # Неактивная вкладка
+                            button.classes(
+                                "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                                "text-gray-600 hover:text-gray-800 hover:border-gray-300 "
+                                "transition-all duration-200 min-w-[140px]"
+                            )
+                
+                # Обновляем стили при переключении вкладок
+                def switch_tab_with_styles(tab_name):
+                    switch_tab(tab_name)
+                    update_tab_styles()
+                
+                # Инициализируем стили
+                update_tab_styles()
 
 
 def switch_to_tab(tab_name):
