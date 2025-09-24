@@ -737,14 +737,47 @@ def create_overview_tab():
             ui.label("Обзор портфеля").classes("text-2xl font-bold text-gray-800")
             ui.button("Обновить", icon="refresh").classes(
                 "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-            ).on("click", lambda: refresh())
+            ).on("click", lambda: refresh_overview_data())
 
-        # Улучшенные статистические карточки
-        with ui.row().classes("gap-4 mb-6"):
-            create_enhanced_stat_card("Общая стоимость", "0.00 USD", "💰", "primary")
-            create_enhanced_stat_card("Дневной PnL", "+0.00 USD", "📈", "success")
-            create_enhanced_stat_card("Нереализованный PnL", "+0.00 USD", "💎", "info")
-            create_enhanced_stat_card("Реализованный PnL", "+0.00 USD", "✅", "warning")
+        # Контейнер для статистических карточек
+        stats_container = ui.row().classes("gap-4 mb-6")
+        
+        def refresh_overview_data():
+            """Обновляет данные на вкладке обзора"""
+            stats_container.clear()
+            with stats_container:
+                try:
+                    # Получаем реальные данные портфеля
+                    portfolio_stats = get_portfolio_stats()
+                    totals = portfolio_stats.get('totals', {})
+                    
+                    # Рассчитываем основные метрики
+                    total_value = totals.get('total_value', 0)
+                    total_unreal = totals.get('total_unreal', 0)
+                    total_realized = totals.get('total_realized', 0)
+                    
+                    # Дневной PnL (пока упрощенно, можно улучшить)
+                    daily_pnl = total_unreal  # В будущем можно добавить расчет дневного PnL
+                    
+                    # Создаем карточки с реальными данными
+                    create_enhanced_stat_card("Общая стоимость", f"${total_value:.2f}", "💰", "primary")
+                    create_enhanced_stat_card("Дневной PnL", f"{daily_pnl:+.2f} USD", "📈", "success" if daily_pnl >= 0 else "warning")
+                    create_enhanced_stat_card("Нереализованный PnL", f"{total_unreal:+.2f} USD", "💎", "info" if total_unreal >= 0 else "warning")
+                    create_enhanced_stat_card("Реализованный PnL", f"{total_realized:+.2f} USD", "✅", "success" if total_realized >= 0 else "warning")
+                    
+                    # Обновляем топ позиции
+                    refresh_top_positions()
+                    
+                except Exception as e:
+                    # В случае ошибки показываем пустые карточки
+                    create_enhanced_stat_card("Общая стоимость", "0.00 USD", "💰", "primary")
+                    create_enhanced_stat_card("Дневной PnL", "+0.00 USD", "📈", "success")
+                    create_enhanced_stat_card("Нереализованный PnL", "+0.00 USD", "💎", "info")
+                    create_enhanced_stat_card("Реализованный PnL", "+0.00 USD", "✅", "warning")
+                    ui.notify(f"Ошибка загрузки данных: {e}", type="negative")
+        
+        # Инициализируем данные
+        refresh_overview_data()
 
         # Остальной контент остается без изменений
         with ui.row().classes("gap-4"):
@@ -757,11 +790,40 @@ def create_overview_tab():
             # Топ позиции
             with ui.card().classes("flex-1 p-4 bg-white shadow-sm rounded-lg"):
                 ui.label("Топ позиции").classes("text-lg font-semibold text-gray-800 mb-4")
-                with ui.column().classes("space-y-2"):
-                    for i in range(3):
-                        with ui.row().classes("items-center justify-between p-2 bg-gray-50 rounded-lg"):
-                            ui.label(f"Позиция {i+1}").classes("font-medium text-gray-700")
-                            ui.label("0.00 USD").classes("text-green-600 font-semibold")
+                
+                # Контейнер для топ позиций
+                top_positions_container = ui.column().classes("space-y-2")
+                
+                def refresh_top_positions():
+                    """Обновляет топ позиции"""
+                    top_positions_container.clear()
+                    with top_positions_container:
+                        try:
+                            portfolio_stats = get_portfolio_stats()
+                            top_positions = portfolio_stats.get('top_positions', [])
+                            
+                            if top_positions:
+                                for i, pos in enumerate(top_positions[:3], 1):  # Показываем топ-3
+                                    coin = pos['coin']
+                                    value = pos.get('value', 0)
+                                    pnl = pos.get('unreal_pnl', 0)
+                                    pnl_color = "text-green-600" if pnl >= 0 else "text-red-600"
+                                    
+                                    with ui.row().classes("items-center justify-between p-2 bg-gray-50 rounded-lg"):
+                                        ui.label(f"{coin}").classes("font-medium text-gray-700")
+                                        with ui.column().classes("text-right"):
+                                            ui.label(f"${value:.2f}").classes("text-green-600 font-semibold")
+                                            ui.label(f"{pnl:+.2f}").classes(f"text-sm {pnl_color}")
+                            else:
+                                with ui.row().classes("items-center justify-center p-4"):
+                                    ui.label("Нет позиций").classes("text-gray-500 italic")
+                                
+                        except Exception as e:
+                            with ui.row().classes("items-center justify-center p-4"):
+                                ui.label("Ошибка загрузки позиций").classes("text-red-500")
+                
+                # Инициализируем топ позиции
+                refresh_top_positions()
 
 
 def refresh():
@@ -1002,7 +1064,7 @@ def portfolio_page():
                         ui.label("Онлайн").classes("text-sm text-green-700 font-medium")
 
             # Область контента с табами
-            with ui.column().classes("flex-1 p-6 overflow-auto"):
+            with ui.column().classes("flex-1 p-6"):
                 # Создаем стабильные вкладки с помощью кнопок
                 current_tab_value = "overview"
                 
@@ -1102,13 +1164,13 @@ def portfolio_page():
                 
                 # Создаем функции для вкладок
                 def create_positions_tab():
-                    with ui.column().classes("w-full h-full overflow-y-auto p-4"):
+                    with ui.column().classes("w-full p-4"):
                         ui.label("🪙 Позиции портфеля").classes("text-2xl font-bold text-gray-800 mb-4")
                         
                         # Кнопки управления
                         with ui.row().classes("gap-3 mb-4"):
                             ui.button("🔄 Обновить", icon="refresh").classes("bg-blue-500 text-white").on("click", lambda: refresh_positions_data())
-                            ui.button("📊 Аналитика", icon="analytics").classes("bg-green-500 text-white").on("click", lambda: switch_to_tab("analytics"))
+                            ui.button("📊 Аналитика", icon="analytics").classes("bg-green-500 text-white").on("click", lambda: switch_tab_with_styles("analytics"))
                         
                         # Контейнер для позиций
                         positions_container = ui.column().classes("w-full")
@@ -1180,28 +1242,28 @@ def portfolio_page():
                                     
                                     # Сводная информация
                                     totals = portfolio_stats.get('totals', {})
-                                    with ui.card().classes("p-4 bg-gradient-to-r from-blue-50 to-green-50 mt-4"):
-                                        ui.label("📊 Сводка позиций").classes("text-lg font-semibold text-blue-800 mb-3")
+                                    with ui.card().classes("p-6 bg-gradient-to-r from-blue-50 to-green-50 mt-4 min-h-[120px]"):
+                                        ui.label("📊 Сводка позиций").classes("text-lg font-semibold text-blue-800 mb-4")
                                         
                                         with ui.row().classes("w-full gap-6"):
-                                            with ui.column().classes("flex-1 text-center"):
-                                                ui.label("Общая стоимость").classes("text-sm text-gray-500")
+                                            with ui.column().classes("flex-1 text-center min-w-[120px]"):
+                                                ui.label("Общая стоимость").classes("text-sm text-gray-500 mb-1")
                                                 ui.label(f"${totals.get('total_value', 0):.2f}").classes("text-xl font-bold text-green-600")
                                             
-                                            with ui.column().classes("flex-1 text-center"):
-                                                ui.label("Нереализованный P&L").classes("text-sm text-gray-500")
+                                            with ui.column().classes("flex-1 text-center min-w-[120px]"):
+                                                ui.label("Нереализованный P&L").classes("text-sm text-gray-500 mb-1")
                                                 total_pnl = totals.get('total_unreal', 0)
                                                 pnl_color = "text-green-600" if total_pnl >= 0 else "text-red-600"
                                                 ui.label(f"${total_pnl:.2f}").classes(f"text-xl font-bold {pnl_color}")
                                             
-                                            with ui.column().classes("flex-1 text-center"):
-                                                ui.label("ROI").classes("text-sm text-gray-500")
+                                            with ui.column().classes("flex-1 text-center min-w-[100px]"):
+                                                ui.label("ROI").classes("text-sm text-gray-500 mb-1")
                                                 roi = totals.get('total_unreal_pct', 0)
                                                 roi_color = "text-green-600" if roi >= 0 else "text-red-600"
                                                 ui.label(f"{roi:.1f}%").classes(f"text-xl font-bold {roi_color}")
                                             
-                                            with ui.column().classes("flex-1 text-center"):
-                                                ui.label("Позиций").classes("text-sm text-gray-500")
+                                            with ui.column().classes("flex-1 text-center min-w-[100px]"):
+                                                ui.label("Позиций").classes("text-sm text-gray-500 mb-1")
                                                 ui.label(f"{len(positions)}").classes("text-xl font-bold text-blue-600")
                                 
                                 except Exception as e:
@@ -1276,9 +1338,6 @@ def portfolio_page():
                 update_tab_styles()
 
 
-def switch_to_tab(tab_name):
-    """Переключает вкладки"""
-    ui.notify(f"Переход на {tab_name}", color="info")
 
 
 def refresh():

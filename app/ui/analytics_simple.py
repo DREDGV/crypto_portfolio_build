@@ -8,7 +8,7 @@ from app.core.services import list_transactions, get_portfolio_stats, positions_
 
 def create_analytics_tab():
     """Создает упрощенную вкладку аналитики"""
-    with ui.column().classes("w-full h-full overflow-y-auto p-4"):
+    with ui.column().classes("w-full p-4"):
         ui.label("📊 Аналитика портфеля").classes("text-2xl font-bold text-gray-800 mb-4")
         
         # Диагностическая информация
@@ -121,7 +121,7 @@ def create_analytics_tab():
         with ui.card().classes("p-4 bg-green-50 w-full mt-4"):
             ui.label("🪙 Текущие позиции").classes("text-lg font-semibold text-green-800 mb-3")
             
-            positions_container = ui.column().classes("w-full")
+            positions_container = ui.column().classes("w-full min-h-[200px]")
             
             def refresh_positions():
                 positions_container.clear()
@@ -141,21 +141,21 @@ def create_analytics_tab():
                             pnl = pos.get('unreal_pnl', 0)  # Уже рассчитанный P&L
                             pnl_percent = pos.get('unreal_pct', 0)  # Уже рассчитанный процент
                             
-                            with ui.row().classes("w-full justify-between items-center p-2 bg-white rounded mb-2"):
-                                with ui.column().classes("flex-1"):
-                                    ui.label(f"{coin}").classes("font-semibold text-gray-800")
+                            with ui.row().classes("w-full justify-between items-center p-3 bg-white rounded-lg mb-3 shadow-sm border"):
+                                with ui.column().classes("flex-1 min-w-[120px]"):
+                                    ui.label(f"{coin}").classes("font-semibold text-gray-800 text-lg")
                                     ui.label(f"{qty:.4f} @ ${avg_cost:.2f}").classes("text-sm text-gray-600")
                                 
-                                with ui.column().classes("flex-1 text-center"):
-                                    ui.label(f"${current_price:.2f}").classes("font-semibold text-blue-600")
+                                with ui.column().classes("flex-1 text-center min-w-[100px]"):
+                                    ui.label(f"${current_price:.2f}").classes("font-semibold text-blue-600 text-lg")
                                     ui.label("Текущая цена").classes("text-xs text-gray-500")
                                 
-                                with ui.column().classes("flex-1 text-center"):
-                                    ui.label(f"${current_value:.2f}").classes("font-semibold text-green-600")
+                                with ui.column().classes("flex-1 text-center min-w-[100px]"):
+                                    ui.label(f"${current_value:.2f}").classes("font-semibold text-green-600 text-lg")
                                     ui.label("Стоимость").classes("text-xs text-gray-500")
                                 
-                                with ui.column().classes("flex-1 text-center"):
-                                    ui.label(f"${pnl:.2f}").classes(f"font-semibold {'text-green-600' if pnl >= 0 else 'text-red-600'}")
+                                with ui.column().classes("flex-1 text-center min-w-[120px]"):
+                                    ui.label(f"${pnl:.2f}").classes(f"font-semibold {'text-green-600' if pnl >= 0 else 'text-red-600'} text-lg")
                                     ui.label(f"({pnl_percent:+.1f}%)").classes(f"text-sm {'text-green-600' if pnl >= 0 else 'text-red-600'}")
                     else:
                         ui.label("Нет открытых позиций").classes("text-gray-500 italic")
