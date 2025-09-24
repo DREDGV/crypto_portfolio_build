@@ -42,7 +42,7 @@ def get_changelog() -> str:
 
 
 def get_concept() -> str:
-    """Возвращает содержимое концепции."""
+    """Возвращает содержимое концепции (основной документ)."""
     try:
         concept_file = Path(__file__).parent.parent.parent / "CONCEPT.md"
         if concept_file.exists():
@@ -50,6 +50,17 @@ def get_concept() -> str:
         return "Концепция недоступна"
     except Exception:
         return "Ошибка загрузки концепции"
+
+
+def get_concept2() -> str:
+    """Возвращает альтернативную/расширенную концепцию (CONCEPT2.md)."""
+    try:
+        concept2_file = Path(__file__).parent.parent.parent / "CONCEPT2.md"
+        if concept2_file.exists():
+            return concept2_file.read_text(encoding="utf-8")
+        return "CONCEPT2 недоступен"
+    except Exception:
+        return "Ошибка загрузки CONCEPT2"
 
 
 def get_tasks() -> str:
@@ -64,14 +75,47 @@ def get_tasks() -> str:
 
 
 def get_roadmap() -> str:
-    """Возвращает содержимое планов развития."""
+    """Возвращает содержимое планов развития (ROADMAP.md)."""
     try:
-        tasks_file = Path(__file__).parent.parent.parent / "TASKS.md"
-        if tasks_file.exists():
-            return tasks_file.read_text(encoding="utf-8")
+        roadmap_file = Path(__file__).parent.parent.parent / "ROADMAP.md"
+        if roadmap_file.exists():
+            return roadmap_file.read_text(encoding="utf-8")
         return "Планы развития недоступны"
     except Exception:
         return "Ошибка загрузки планов развития"
+
+
+def get_architecture() -> str:
+    """Возвращает документ архитектуры (ARCHITECTURE.md)."""
+    try:
+        architecture_file = Path(__file__).parent.parent.parent / "ARCHITECTURE.md"
+        if architecture_file.exists():
+            return architecture_file.read_text(encoding="utf-8")
+        return "Архитектура недоступна"
+    except Exception:
+        return "Ошибка загрузки архитектуры"
+
+
+def get_requirements_doc() -> str:
+    """Возвращает документ требований (REQUIREMENTS.md)."""
+    try:
+        req_file = Path(__file__).parent.parent.parent / "REQUIREMENTS.md"
+        if req_file.exists():
+            return req_file.read_text(encoding="utf-8")
+        return "Требования недоступны"
+    except Exception:
+        return "Ошибка загрузки требований"
+
+
+def get_backlog() -> str:
+    """Возвращает бэклог (BACKLOG.md)."""
+    try:
+        backlog_file = Path(__file__).parent.parent.parent / "BACKLOG.md"
+        if backlog_file.exists():
+            return backlog_file.read_text(encoding="utf-8")
+        return "Бэклог недоступен"
+    except Exception:
+        return "Ошибка загрузки бэклога"
 
 
 def parse_version(version: str) -> tuple[int, int, int]:
@@ -138,7 +182,11 @@ def get_app_info() -> dict:
         "description": get_app_description(),
         "changelog": get_changelog(),
         "concept": get_concept(),
+        "concept2": get_concept2(),
         "tasks": get_tasks(),
-        "roadmap": get_roadmap(),  # Добавлено
+        "roadmap": get_roadmap(),
+        "architecture": get_architecture(),
+        "requirements": get_requirements_doc(),
+        "backlog": get_backlog(),
         "version_info": get_version_info(),
     }

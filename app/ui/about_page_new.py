@@ -192,7 +192,11 @@ def show_about_page():
                 sections = [
                     ("📋 Общая информация", "general", "description"),
                     ("🕒 История изменений", "changelog", "history"), 
+                    ("🏗️ Архитектура", "architecture", "schema"),
+                    ("📜 Требования", "requirements", "rule"),
+                    ("📋 Бэклог", "backlog", "list"),
                     ("💡 Концепция", "concept", "lightbulb"),
+                    ("💡 Концепция 2", "concept2", "emoji_objects"),
                     ("🚀 Планы развития", "roadmap", "rocket_launch")
                 ]
                 
@@ -218,7 +222,11 @@ def show_about_page():
                 
                 # Остальные разделы
                 content_data["changelog"] = app_info.get("changelog", "Ченджлог недоступен")
-                content_data["concept"] = app_info.get("concept", "Концепция недоступна") 
+                content_data["architecture"] = app_info.get("architecture", "Архитектура недоступна")
+                content_data["requirements"] = app_info.get("requirements", "Требования недоступны")
+                content_data["backlog"] = app_info.get("backlog", "Бэклог недоступен")
+                content_data["concept"] = app_info.get("concept", "Концепция недоступна")
+                content_data["concept2"] = app_info.get("concept2", "CONCEPT2 недоступен")
                 content_data["roadmap"] = app_info.get("roadmap", "Планы развития недоступны")
                 
                 # Создаем контейнеры для контента
