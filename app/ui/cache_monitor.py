@@ -8,7 +8,7 @@ from app.adapters.prices import get_cache_stats, clean_expired_cache, preload_po
 
 def create_cache_monitor_tab():
     """Создает вкладку мониторинга кэша"""
-    with ui.column().classes("w-full space-y-4"):
+    with ui.column().classes("w-full space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
         ui.label("📊 Мониторинг кэша").classes("text-2xl font-bold text-gray-800")
         
         # Кнопки управления кэшем

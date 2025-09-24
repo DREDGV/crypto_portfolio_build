@@ -176,13 +176,29 @@ def enrich_positions_with_market(positions: list[dict], quote: str = "USD"):
     
     for p in positions:
         coin = p["coin"]
-        price = get_current_price(coin, quote=quote) or 0.0
+        # Используем функцию с повторными попытками для получения цены
+        from app.adapters.prices import get_current_price_with_retry
+        price = get_current_price_with_retry(coin, quote=quote) or 0.0
+        
+        # Если цена все еще 0, пытаемся получить из кэша или используем последнюю известную цену
+        if price == 0.0:
+            # Попробуем получить цену из кэша
+            from app.adapters.prices import _cache
+            cache_key = (coin.upper(), quote.lower())
+            if cache_key in _cache:
+                cached_entry = _cache[cache_key]
+                price = cached_entry.price if hasattr(cached_entry, 'price') else cached_entry[0]
         
         value = p["quantity"] * price
         unreal = value - p["cost_basis"]
-        unreal_pct = (
-            (price - p["avg_cost"]) / p["avg_cost"] * 100 if p["avg_cost"] > 0 else 0.0
-        )
+        
+        # Исправляем расчет ROI - если цена 0, показываем -100% только если есть позиция
+        if price == 0.0 and p["quantity"] > 0:
+            unreal_pct = -100.0  # Позиция есть, но цена недоступна
+        elif p["avg_cost"] > 0 and price > 0:
+            unreal_pct = (price - p["avg_cost"]) / p["avg_cost"] * 100
+        else:
+            unreal_pct = 0.0
         total_value += value
         total_unreal += unreal
         total_realized += p["realized"]
@@ -291,6 +307,13 @@ def get_portfolio_stats() -> dict:
     cached_result = get_cached_portfolio_stats()
     if cached_result is not None:
         return cached_result
+    
+    # Предзагружаем популярные монеты для лучшего получения цен
+    try:
+        from app.adapters.prices import preload_popular_coins
+        preload_popular_coins()
+    except Exception:
+        pass  # Игнорируем ошибки предзагрузки
     
     positions = positions_fifo()
     enriched, totals = enrich_positions_with_market(positions)

@@ -13,7 +13,7 @@ from app.core.export_import import (
 
 def create_export_import_tab():
     """Создает вкладку для экспорта и импорта данных"""
-    with ui.column().classes("w-full space-y-6"):
+    with ui.column().classes("w-full space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
         ui.label("📤📥 Экспорт/Импорт данных").classes("text-2xl font-bold text-gray-800")
         
         # Статистика экспорта

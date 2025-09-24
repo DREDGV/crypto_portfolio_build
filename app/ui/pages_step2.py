@@ -731,7 +731,7 @@ def open_enhanced_add_dialog():
 
 def create_overview_tab():
     """Создает вкладку обзора с улучшенными карточками"""
-    with ui.column().classes("w-full space-y-4"):
+    with ui.column().classes("w-full space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
         # Заголовок
         with ui.row().classes("items-center justify-between"):
             ui.label("Обзор портфеля").classes("text-2xl font-bold text-gray-800")
@@ -1164,7 +1164,7 @@ def portfolio_page():
                 
                 # Создаем функции для вкладок
                 def create_positions_tab():
-                    with ui.column().classes("w-full p-4"):
+                    with ui.column().classes("w-full p-4 max-h-[calc(100vh-200px)] overflow-y-auto"):
                         ui.label("🪙 Позиции портфеля").classes("text-2xl font-bold text-gray-800 mb-4")
                         
                         # Кнопки управления
@@ -1229,41 +1229,53 @@ def portfolio_page():
                                                 ui.label(f"${avg_cost:.2f}").classes("flex-1 text-gray-700")
                                                 
                                                 # Текущая цена
-                                                ui.label(f"${current_price:.2f}").classes("flex-1 text-gray-700")
+                                                if current_price > 0:
+                                                    ui.label(f"${current_price:.2f}").classes("flex-1 text-gray-700")
+                                                else:
+                                                    ui.label("Загрузка...").classes("flex-1 text-gray-500 italic")
                                                 
                                                 # Стоимость
-                                                ui.label(f"${current_value:.2f}").classes("flex-1 font-semibold text-gray-800")
+                                                if current_value > 0:
+                                                    ui.label(f"${current_value:.2f}").classes("flex-1 font-semibold text-gray-800")
+                                                else:
+                                                    ui.label("Загрузка...").classes("flex-1 text-gray-500 italic")
                                                 
                                                 # P&L
-                                                ui.label(f"${pnl:.2f}").classes(f"flex-1 font-semibold {pnl_color}")
+                                                if current_price > 0:
+                                                    ui.label(f"${pnl:.2f}").classes(f"flex-1 font-semibold {pnl_color}")
+                                                else:
+                                                    ui.label("Загрузка...").classes("flex-1 text-gray-500 italic")
                                                 
                                                 # ROI
-                                                ui.label(f"{pnl_percent:.1f}%").classes(f"flex-1 font-semibold {pnl_color}")
+                                                if current_price > 0:
+                                                    ui.label(f"{pnl_percent:.1f}%").classes(f"flex-1 font-semibold {pnl_color}")
+                                                else:
+                                                    ui.label("Загрузка...").classes("flex-1 text-gray-500 italic")
                                     
                                     # Сводная информация
                                     totals = portfolio_stats.get('totals', {})
-                                    with ui.card().classes("p-6 bg-gradient-to-r from-blue-50 to-green-50 mt-4 min-h-[120px]"):
+                                    with ui.card().classes("p-6 bg-gradient-to-r from-blue-50 to-green-50 mt-4 min-h-[160px] mb-4"):
                                         ui.label("📊 Сводка позиций").classes("text-lg font-semibold text-blue-800 mb-4")
                                         
                                         with ui.row().classes("w-full gap-6"):
                                             with ui.column().classes("flex-1 text-center min-w-[120px]"):
-                                                ui.label("Общая стоимость").classes("text-sm text-gray-500 mb-1")
+                                                ui.label("Общая стоимость").classes("text-sm text-gray-500 mb-2")
                                                 ui.label(f"${totals.get('total_value', 0):.2f}").classes("text-xl font-bold text-green-600")
                                             
                                             with ui.column().classes("flex-1 text-center min-w-[120px]"):
-                                                ui.label("Нереализованный P&L").classes("text-sm text-gray-500 mb-1")
+                                                ui.label("Нереализованный P&L").classes("text-sm text-gray-500 mb-2")
                                                 total_pnl = totals.get('total_unreal', 0)
                                                 pnl_color = "text-green-600" if total_pnl >= 0 else "text-red-600"
                                                 ui.label(f"${total_pnl:.2f}").classes(f"text-xl font-bold {pnl_color}")
                                             
                                             with ui.column().classes("flex-1 text-center min-w-[100px]"):
-                                                ui.label("ROI").classes("text-sm text-gray-500 mb-1")
+                                                ui.label("ROI").classes("text-sm text-gray-500 mb-2")
                                                 roi = totals.get('total_unreal_pct', 0)
                                                 roi_color = "text-green-600" if roi >= 0 else "text-red-600"
                                                 ui.label(f"{roi:.1f}%").classes(f"text-xl font-bold {roi_color}")
                                             
                                             with ui.column().classes("flex-1 text-center min-w-[100px]"):
-                                                ui.label("Позиций").classes("text-sm text-gray-500 mb-1")
+                                                ui.label("Позиций").classes("text-sm text-gray-500 mb-2")
                                                 ui.label(f"{len(positions)}").classes("text-xl font-bold text-blue-600")
                                 
                                 except Exception as e:
@@ -1276,7 +1288,7 @@ def portfolio_page():
                         refresh_positions_data()
                 
                 def create_transactions_tab():
-                    with ui.column().classes("w-full space-y-4"):
+                    with ui.column().classes("w-full space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
                         ui.label("Сделки").classes("text-2xl font-bold text-gray-800")
                         with ui.card().classes("p-4 bg-white shadow-sm rounded-lg"):
                             # Получаем список сделок
@@ -1600,7 +1612,7 @@ def create_alerts_tab():
 
 def create_alerts_tab():
     """Создает вкладку с алертами по ценам"""
-    with ui.column().classes("w-full space-y-4"):
+    with ui.column().classes("w-full space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
         ui.label("🔔 Алерты по ценам").classes("text-2xl font-bold text-gray-800")
         
         # Кнопки управления

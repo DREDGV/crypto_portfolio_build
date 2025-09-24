@@ -8,7 +8,7 @@ from app.core.services import list_transactions, get_portfolio_stats, positions_
 
 def create_analytics_tab():
     """Создает упрощенную вкладку аналитики"""
-    with ui.column().classes("w-full p-4"):
+    with ui.column().classes("w-full p-4 max-h-[calc(100vh-200px)] overflow-y-auto"):
         ui.label("📊 Аналитика портфеля").classes("text-2xl font-bold text-gray-800 mb-4")
         
         # Диагностическая информация
