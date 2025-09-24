@@ -93,12 +93,12 @@ def create_enhanced_stat_card(title, value, icon, color="primary"):
     }
     
     with ui.card().classes(
-        f"p-4 text-white shadow-lg rounded-lg {color_classes.get(color, color_classes['primary'])}"
+        f"p-6 text-white shadow-xl rounded-xl border border-white/20 hover:shadow-2xl transition-all duration-300 {color_classes.get(color, color_classes['primary'])}"
     ):
-        with ui.row().classes("items-center justify-between mb-2"):
-            ui.label(icon).classes("text-2xl")
-            ui.label(value).classes("text-xl font-bold")
-        ui.label(title).classes("text-sm opacity-90")
+        with ui.column().classes("text-center"):
+            ui.label(icon).classes("text-4xl mb-3")
+            ui.label(value).classes("text-2xl font-bold mb-2")
+            ui.label(title).classes("text-sm opacity-90 font-medium")
 
 
 def open_enhanced_add_dialog():
@@ -731,16 +731,52 @@ def open_enhanced_add_dialog():
 
 def create_overview_tab():
     """Создает вкладку обзора с улучшенными карточками"""
-    with ui.column().classes("w-full space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
+    with ui.column().classes("w-full space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
         # Заголовок
-        with ui.row().classes("items-center justify-between"):
-            ui.label("Обзор портфеля").classes("text-2xl font-bold text-gray-800")
-            ui.button("Обновить", icon="refresh").classes(
-                "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+        with ui.row().classes("items-center justify-between mb-6"):
+            ui.label("📊 Обзор портфеля").classes("text-3xl font-bold text-gray-800")
+            ui.button("🔄 Обновить", icon="refresh").classes(
+                "bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-semibold"
             ).on("click", lambda: refresh_overview_data())
 
         # Контейнер для статистических карточек
-        stats_container = ui.row().classes("gap-4 mb-6")
+        stats_container = ui.row().classes("gap-6 mb-8")
+        
+        # Контейнер для топ позиций (определяем заранее)
+        top_positions_container = ui.column().classes("space-y-3")
+        
+        def refresh_top_positions():
+            """Обновляет топ позиции"""
+            top_positions_container.clear()
+            with top_positions_container:
+                try:
+                    portfolio_stats = get_portfolio_stats()
+                    top_positions = portfolio_stats.get('top_positions', [])
+                    
+                    if top_positions:
+                        for i, pos in enumerate(top_positions[:3], 1):  # Показываем топ-3
+                            coin = pos['coin']
+                            value = pos.get('value', 0)
+                            pnl = pos.get('unreal_pnl', 0)
+                            pnl_color = "text-green-600" if pnl >= 0 else "text-red-600"
+                            
+                            with ui.card().classes("p-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 transition-all duration-200"):
+                                with ui.row().classes("items-center justify-between"):
+                                    with ui.column().classes("flex-1"):
+                                        ui.label(f"{coin}").classes("text-xl font-bold text-gray-800")
+                                        ui.label(f"Позиция #{i}").classes("text-sm text-gray-500")
+                                    with ui.column().classes("text-right"):
+                                        ui.label(f"${value:.2f}").classes("text-2xl font-bold text-green-600")
+                                        ui.label(f"{pnl:+.2f}").classes(f"text-lg font-semibold {pnl_color}")
+                    else:
+                        with ui.card().classes("p-8 text-center bg-gray-50 rounded-lg"):
+                            ui.icon("inbox").classes("text-4xl text-gray-400 mb-2")
+                            ui.label("Нет позиций").classes("text-gray-500 italic text-lg")
+                                
+                except Exception as e:
+                    with ui.card().classes("p-8 text-center bg-red-50 rounded-lg"):
+                        ui.icon("error").classes("text-4xl text-red-400 mb-2")
+                        ui.label("Ошибка загрузки позиций").classes("text-red-500 text-lg")
         
         def refresh_overview_data():
             """Обновляет данные на вкладке обзора"""
@@ -779,51 +815,40 @@ def create_overview_tab():
         # Инициализируем данные
         refresh_overview_data()
 
-        # Остальной контент остается без изменений
-        with ui.row().classes("gap-4"):
-            # График стоимости портфеля
-            with ui.card().classes("flex-1 p-4 bg-white shadow-sm rounded-lg"):
-                ui.label("Стоимость портфеля").classes("text-lg font-semibold text-gray-800 mb-4")
-                with ui.row().classes("h-48 items-center justify-center bg-gray-50 rounded-lg"):
-                    ui.label("График в разработке").classes("text-gray-500")
-
-            # Топ позиции
-            with ui.card().classes("flex-1 p-4 bg-white shadow-sm rounded-lg"):
-                ui.label("Топ позиции").classes("text-lg font-semibold text-gray-800 mb-4")
+        # Улучшенный контент в две колонки
+        with ui.row().classes("gap-6"):
+            # График стоимости портфеля (левая колонка)
+            with ui.card().classes("flex-1 p-6 bg-white shadow-lg rounded-xl border border-gray-200"):
+                ui.label("📈 Стоимость портфеля").classes("text-xl font-bold text-gray-800 mb-4")
                 
-                # Контейнер для топ позиций
-                top_positions_container = ui.column().classes("space-y-2")
-                
-                def refresh_top_positions():
-                    """Обновляет топ позиции"""
-                    top_positions_container.clear()
-                    with top_positions_container:
-                        try:
-                            portfolio_stats = get_portfolio_stats()
-                            top_positions = portfolio_stats.get('top_positions', [])
+                # Простой график стоимости портфеля
+                with ui.column().classes("h-64 items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg"):
+                    try:
+                        portfolio_stats = get_portfolio_stats()
+                        total_value = portfolio_stats.get('totals', {}).get('total_value', 0)
+                        
+                        # Простая визуализация стоимости
+                        with ui.column().classes("text-center"):
+                            ui.label("💰").classes("text-6xl mb-4")
+                            ui.label(f"${total_value:.2f}").classes("text-4xl font-bold text-blue-600 mb-2")
+                            ui.label("Общая стоимость").classes("text-lg text-gray-600")
                             
-                            if top_positions:
-                                for i, pos in enumerate(top_positions[:3], 1):  # Показываем топ-3
-                                    coin = pos['coin']
-                                    value = pos.get('value', 0)
-                                    pnl = pos.get('unreal_pnl', 0)
-                                    pnl_color = "text-green-600" if pnl >= 0 else "text-red-600"
-                                    
-                                    with ui.row().classes("items-center justify-between p-2 bg-gray-50 rounded-lg"):
-                                        ui.label(f"{coin}").classes("font-medium text-gray-700")
-                                        with ui.column().classes("text-right"):
-                                            ui.label(f"${value:.2f}").classes("text-green-600 font-semibold")
-                                            ui.label(f"{pnl:+.2f}").classes(f"text-sm {pnl_color}")
+                            # Простой индикатор роста
+                            if total_value > 0:
+                                ui.label("📈 Портфель активен").classes("text-green-600 font-semibold mt-2")
                             else:
-                                with ui.row().classes("items-center justify-center p-4"):
-                                    ui.label("Нет позиций").classes("text-gray-500 italic")
+                                ui.label("📊 Нет данных").classes("text-gray-500 mt-2")
                                 
-                        except Exception as e:
-                            with ui.row().classes("items-center justify-center p-4"):
-                                ui.label("Ошибка загрузки позиций").classes("text-red-500")
+                    except Exception as e:
+                        ui.label("График в разработке").classes("text-gray-500 text-lg")
+
+            # Топ позиции (правая колонка)
+            with ui.card().classes("flex-1 p-6 bg-white shadow-lg rounded-xl border border-gray-200"):
+                ui.label("🏆 Топ позиции").classes("text-xl font-bold text-gray-800 mb-4")
                 
-                # Инициализируем топ позиции
-                refresh_top_positions()
+                # Используем уже созданный контейнер
+                with top_positions_container:
+                    pass  # Контейнер уже создан выше
 
 
 def refresh():
