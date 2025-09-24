@@ -70,7 +70,7 @@ def preload_popular_coins():
     """Предзагрузить цены популярных монет"""
     popular_coins = ['BTC', 'ETH', 'LINK', 'ADA', 'DOT', 'MATIC', 'AVAX', 'SOL']
     
-    print("🔄 Предзагрузка популярных монет...")
+    # print("🔄 Предзагрузка популярных монет...")
     loaded_count = 0
     
     for coin in popular_coins:
@@ -78,13 +78,15 @@ def preload_popular_coins():
             price = get_current_price(coin)
             if price:
                 loaded_count += 1
-                print(f"✅ {coin}: ${price:.2f}")
+                # print(f"✅ {coin}: ${price:.2f}")
             else:
-                print(f"❌ {coin}: не удалось загрузить")
+                # print(f"❌ {coin}: не удалось загрузить")
+                pass
         except Exception as e:
-            print(f"❌ {coin}: ошибка - {e}")
+            # print(f"❌ {coin}: ошибка - {e}")
+            pass
     
-    print(f"🎯 Предзагружено {loaded_count}/{len(popular_coins)} монет")
+    # print(f"🎯 Предзагружено {loaded_count}/{len(popular_coins)} монет")
     return loaded_count
 
 # Импортируем адаптер для акций
@@ -237,20 +239,20 @@ def get_current_price(symbol: str, quote: str = "USD") -> float | None:
                     )
                     return price
                 else:
-                    print(f"⚠️ Получена нулевая цена для {sym}")
+                    # print(f"⚠️ Получена нулевая цена для {sym}")
                     return None
             else:
-                print(f"⚠️ Монета {sym} не найдена в ответе API")
+                # print(f"⚠️ Монета {sym} не найдена в ответе API")
                 return None
 
     except httpx.TimeoutException:
-        print(f"⏰ Таймаут при получении цены для {sym}")
+        # print(f"⏰ Таймаут при получении цены для {sym}")
         return None
     except httpx.HTTPStatusError as e:
-        print(f"🌐 HTTP ошибка {e.response.status_code} при получении цены для {sym}")
+        # print(f"🌐 HTTP ошибка {e.response.status_code} при получении цены для {sym}")
         return None
     except Exception as e:
-        print(f"❌ Ошибка при получении цены для {sym}: {e}")
+        # print(f"❌ Ошибка при получении цены для {sym}: {e}")
         return None
 
 
@@ -327,7 +329,7 @@ def get_price_info(symbol: str, quote: str = "USD") -> dict | None:
                 return None
 
     except Exception as e:
-        print(f"❌ Ошибка при получении информации о цене для {sym}: {e}")
+        # print(f"❌ Ошибка при получении информации о цене для {sym}: {e}")
         return None
 
 
@@ -345,7 +347,7 @@ def get_price_from_binance(symbol: str, quote: str = "USD") -> float | None:
             data = r.json()
             return float(data.get("price", 0))
     except Exception as e:
-        print(f"⚠️ Binance API ошибка для {symbol}: {e}")
+        # print(f"⚠️ Binance API ошибка для {symbol}: {e}")
         return None
 
 
@@ -375,7 +377,7 @@ def get_price_from_coinpaprika(symbol: str, quote: str = "USD") -> float | None:
             usd_quote = quotes.get("USD", {})
             return float(usd_quote.get("price", 0))
     except Exception as e:
-        print(f"⚠️ CoinPaprika API ошибка для {symbol}: {e}")
+        # print(f"⚠️ CoinPaprika API ошибка для {symbol}: {e}")
         return None
 
 
@@ -396,7 +398,7 @@ def get_price_from_coinbase(symbol: str, quote: str = "USD") -> float | None:
                 return float(usd_rate)
             return None
     except Exception as e:
-        print(f"⚠️ Coinbase API ошибка для {symbol}: {e}")
+        # print(f"⚠️ Coinbase API ошибка для {symbol}: {e}")
         return None
 
 
@@ -433,7 +435,7 @@ def get_price_from_kraken(symbol: str, quote: str = "USD") -> float | None:
                 return float(price)
             return None
     except Exception as e:
-        print(f"⚠️ Kraken API ошибка для {symbol}: {e}")
+        # print(f"⚠️ Kraken API ошибка для {symbol}: {e}")
         return None
 
 
@@ -456,7 +458,7 @@ def get_price_from_okx(symbol: str, quote: str = "USD") -> float | None:
                     return float(ticker.get("last", 0))
             return None
     except Exception as e:
-        print(f"⚠️ OKX API ошибка для {symbol}: {e}")
+        # print(f"⚠️ OKX API ошибка для {symbol}: {e}")
         return None
 
 
@@ -499,7 +501,7 @@ def get_price_from_coinmarketcap(symbol: str, quote: str = "USD") -> float | Non
                     return float(quote_data["price"])
             return None
     except Exception as e:
-        print(f"⚠️ CoinMarketCap API ошибка для {symbol}: {e}")
+        # print(f"⚠️ CoinMarketCap API ошибка для {symbol}: {e}")
         return None
 
 
@@ -643,9 +645,9 @@ def get_current_price_with_retry(
             # Добавляем случайную задержку для избежания rate limiting
             if attempt > 0:
                 delay = random.uniform(1.0, 3.0) * (attempt + 1)
-                print(
-                    f"⏳ Попытка {attempt + 1}/{max_retries}, задержка {delay:.1f}с..."
-                )
+                # print(
+                #     f"⏳ Попытка {attempt + 1}/{max_retries}, задержка {delay:.1f}с..."
+                # )
                 time.sleep(delay)
 
             price = get_current_price(symbol, quote)
@@ -653,9 +655,9 @@ def get_current_price_with_retry(
                 return price
 
         except Exception as e:
-            print(f"⚠️ Попытка {attempt + 1} неудачна: {e}")
+            # print(f"⚠️ Попытка {attempt + 1} неудачна: {e}")
             if attempt == max_retries - 1:
-                print(f"❌ Все попытки исчерпаны для {symbol}")
+                # print(f"❌ Все попытки исчерпаны для {symbol}")
                 return None
 
     return None
