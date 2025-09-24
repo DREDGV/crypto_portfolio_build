@@ -5,11 +5,14 @@ import subprocess
 import sys
 from datetime import datetime
 
+
 def run_command(command, description):
     """Выполняет команду и выводит результат"""
     print(f"🔄 {description}...")
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            command, shell=True, capture_output=True, text=True, timeout=30
+        )
         if result.returncode == 0:
             print(f"✅ {description} - успешно")
             if result.stdout.strip():
@@ -27,20 +30,21 @@ def run_command(command, description):
         print(f"❌ {description} - исключение: {e}")
         return False
 
+
 def main():
     print("🚀 Начинаем коммит и пуш изменений...")
     print("=" * 50)
-    
+
     # Получаем текущую дату
     current_date = datetime.now().strftime("%Y-%m-%d")
-    
+
     # 1. Добавляем все файлы
     if not run_command("git add .", "Добавление файлов"):
         return False
-    
+
     # 2. Проверяем статус
     run_command("git status", "Проверка статуса")
-    
+
     # 3. Создаем коммит
     commit_message = f"""feat: Добавлена поддержка акций v1.3.0
 
@@ -77,30 +81,35 @@ def main():
 
 Версия: 1.3.0
 Дата: {current_date}"""
-    
+
     if not run_command(f'git commit -m "{commit_message}"', "Создание коммита"):
         return False
-    
+
     # 4. Создаем тег
-    if not run_command("git tag -a v1.3.0 -m 'Версия 1.3.0: Поддержка акций'", "Создание тега"):
+    if not run_command(
+        "git tag -a v1.3.0 -m 'Версия 1.3.0: Поддержка акций'", "Создание тега"
+    ):
         return False
-    
+
     # 5. Пушим изменения
     if not run_command("git push origin main", "Пуш изменений"):
         return False
-    
+
     # 6. Пушим теги
     if not run_command("git push origin --tags", "Пуш тегов"):
         return False
-    
+
     print("=" * 50)
     print("🎉 ВСЕ ИЗМЕНЕНИЯ УСПЕШНО ОТПРАВЛЕНЫ НА GITHUB!")
     print("📋 Версия: 1.3.0")
     print("📅 Дата:", current_date)
-    print("🔗 Репозиторий: https://github.com/your-username/crypto_portfolio_latest_now")
+    print(
+        "🔗 Репозиторий: https://github.com/your-username/crypto_portfolio_latest_now"
+    )
     print("=" * 50)
-    
+
     return True
+
 
 if __name__ == "__main__":
     success = main()
