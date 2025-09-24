@@ -1,0 +1,22 @@
+{
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "terminal.integrated.profiles.windows": {
+        "Command Prompt": {
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "args": [],
+            "icon": "terminal-cmd"
+        },
+        "PowerShell": {
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": ["-ExecutionPolicy", "Bypass"],
+            "icon": "terminal-powershell"
+        }
+    },
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.integrated.inheritEnv": true,
+    "terminal.integrated.env.windows": {
+        "PATH": "${env:PATH}"
+    },
+    "terminal.integrated.automationShell.windows": "C:\\Windows\\System32\\cmd.exe"
+}
+
