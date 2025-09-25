@@ -69,7 +69,12 @@ def create_analytics_tab():
                         positions = positions_fifo()
                         
                         # Простые расчеты
-                        total_invested = sum(tx['quantity'] * tx['price'] for tx in transactions if tx['type'] in ['buy', 'deposit', 'exchange_in'])
+                        from app.core.taxonomy import INBOUND_POSITION_TYPES, normalize_transaction_type
+                        total_invested = sum(
+                            tx['quantity'] * tx['price']
+                            for tx in transactions
+                            if normalize_transaction_type(tx.get('type')) in INBOUND_POSITION_TYPES
+                        )
                         # ИСПРАВЛЕНИЕ: правильный путь к total_value
                         current_value = portfolio_stats.get('totals', {}).get('total_value', 0)
                         total_pnl = current_value - total_invested
@@ -111,9 +116,11 @@ def create_analytics_tab():
                         
                         with ui.column().classes("flex-1 text-center"):
                             ui.label("🏆 Стратегия").classes("text-sm text-gray-500")
-                            strategies = [tx.get('strategy', 'unknown') for tx in transactions]
+                            from app.core.taxonomy import normalize_strategy, STRATEGY_META
+                            strategies = [normalize_strategy(tx.get('strategy', 'unknown')) for tx in transactions]
                             main_strategy = max(set(strategies), key=strategies.count) if strategies else 'unknown'
-                            ui.label(f"{main_strategy}").classes("text-lg font-semibold text-purple-600")
+                            strategy_label = STRATEGY_META.get(main_strategy).label if main_strategy in STRATEGY_META else main_strategy
+                            ui.label(f"{strategy_label}").classes("text-lg font-semibold text-purple-600")
             
             refresh_metrics()
         

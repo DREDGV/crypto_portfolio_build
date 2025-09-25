@@ -3,6 +3,7 @@ import random
 import time
 from typing import Dict, Tuple, Optional
 from dataclasses import dataclass
+import threading
 
 import httpx
 
@@ -16,6 +17,9 @@ class CacheEntry:
 
 # Улучшенный кэш с метаданными
 _cache: Dict[Tuple[str, str], CacheEntry] = {}
+_refresh_in_progress: set[Tuple[str, str]] = set()
+_preload_started = False
+_last_success_timestamp: Optional[float] = None
 
 # TTL для разных типов монет (в секундах)
 CACHE_TTL = {
@@ -88,6 +92,24 @@ def preload_popular_coins():
     
     # print(f"🎯 Предзагружено {loaded_count}/{len(popular_coins)} монет")
     return loaded_count
+
+
+def ensure_preload_popular_coins():
+    """Запускает предзагрузку популярных монет в фоне (один раз)."""
+    global _preload_started
+    if _preload_started:
+        return
+
+    _preload_started = True
+
+    def _runner():
+        try:
+            preload_popular_coins()
+        finally:
+            # позволяем перезапустить, если нужно инициировать вручную позже
+            pass
+
+    threading.Thread(target=_runner, daemon=True).start()
 
 # Импортируем адаптер для акций
 from .stock_prices import StockPriceAdapter
@@ -179,6 +201,42 @@ ID_MAP = {
 }
 
 
+def get_cached_price(symbol: str, quote: str = "USD", allow_expired: bool = False) -> Optional[float]:
+    """Возвращает цену из кэша без сетевых вызовов."""
+    key = (symbol.upper(), quote.lower())
+    entry = _cache.get(key)
+    if not entry:
+        return None
+    if allow_expired or is_cache_valid(entry):
+        return entry.price
+    return None
+
+
+def get_cache_entry(symbol: str, quote: str = "USD") -> Optional[CacheEntry]:
+    """Возвращает объект CacheEntry из кэша, если он есть."""
+    key = (symbol.upper(), quote.lower())
+    entry = _cache.get(key)
+    if entry and isinstance(entry, CacheEntry):
+        return entry
+    return None
+
+
+def _schedule_refresh(symbol: str, quote: str = "USD") -> None:
+    """Запускает обновление цены в фоне, чтобы не блокировать UI."""
+    key = (symbol.upper(), quote.lower())
+    if key in _refresh_in_progress:
+        return
+
+    def _refresh():
+        try:
+            get_current_price(symbol, quote)
+        finally:
+            _refresh_in_progress.discard(key)
+
+    _refresh_in_progress.add(key)
+    threading.Thread(target=_refresh, daemon=True).start()
+
+
 def get_current_price(symbol: str, quote: str = "USD") -> float | None:
     """Возвращает текущую цену через CoinGecko Simple Price API.
 
@@ -198,13 +256,14 @@ def get_current_price(symbol: str, quote: str = "USD") -> float | None:
     now = time.time()
 
     # Проверяем кэш с умным TTL
-    if key in _cache:
-        entry = _cache[key]
+    entry = _cache.get(key)
+    if entry:
         if is_cache_valid(entry):
             return entry.price
-        else:
-            # Удаляем устаревшую запись
-            del _cache[key]
+        # устаревшую запись не удаляем, чтобы можно было использовать как «stale»
+
+    # Запускаем предзагрузку популярных монет в фоне (однократно)
+    ensure_preload_popular_coins()
 
     # Получаем ID монеты для CoinGecko API
     coin_id = ID_MAP.get(sym, sym.lower())
@@ -231,12 +290,14 @@ def get_current_price(symbol: str, quote: str = "USD") -> float | None:
                 if price > 0:
                     # Сохраняем в кэш с метаданными
                     ttl = get_cache_ttl(sym)
+                    global _last_success_timestamp
                     _cache[key] = CacheEntry(
                         price=price,
                         timestamp=now,
                         source="CoinGecko",
                         ttl=ttl
                     )
+                    _last_success_timestamp = now
                     return price
                 else:
                     # print(f"⚠️ Получена нулевая цена для {sym}")
@@ -281,11 +342,12 @@ def get_price_info(symbol: str, quote: str = "USD") -> dict | None:
     now = time.time()
 
     # Проверяем кэш (актуален 5 минут для улучшения производительности)
-    if key in _cache and now - _cache[key][1] < 300:
+    entry = _cache.get(key)
+    if entry and isinstance(entry, CacheEntry) and now - entry.timestamp < 300:
         return {
-            "price": _cache[key][0],
+            "price": entry.price,
             "change_24h": None,
-            "last_updated": int(_cache[key][1]),
+            "last_updated": int(entry.timestamp),
             "cached": True,
         }
 
@@ -315,7 +377,12 @@ def get_price_info(symbol: str, quote: str = "USD") -> dict | None:
 
                 if price > 0:
                     # Сохраняем в кэш
-                    _cache[key] = (price, now)
+                    _cache[key] = CacheEntry(
+                        price=price,
+                        timestamp=now,
+                        source="CoinGecko",
+                        ttl=get_cache_ttl(sym),
+                    )
 
                     return {
                         "price": price,
@@ -539,8 +606,9 @@ def get_aggregated_price(symbol: str, quote: str = "USD") -> dict | None:
     now = time.time()
 
     # Проверяем кэш (актуален 5 минут для улучшения производительности)
-    if key in _cache and now - _cache[key][1] < 300:
-        cached_price = _cache[key][0]
+    entry = _cache.get(key)
+    if entry and isinstance(entry, CacheEntry) and now - entry.timestamp < 300:
+        cached_price = entry.price
         return {
             "price": cached_price,
             "sources": ["Кэш"],
@@ -628,7 +696,11 @@ def get_current_price_fallback(symbol: str, quote: str = "USD") -> float | None:
 
 
 def get_current_price_with_retry(
-    symbol: str, quote: str = "USD", max_retries: int = 3
+    symbol: str,
+    quote: str = "USD",
+    max_retries: int = 2,
+    allow_stale: bool = True,
+    background_refresh: bool = True,
 ) -> float | None:
     """Получает текущую цену с повторными попытками и задержками.
 
@@ -640,11 +712,24 @@ def get_current_price_with_retry(
     Returns:
         float | None: Текущая цена или None в случае ошибки
     """
+    # Сначала пробуем вернуть актуальный кэш
+    cached_price = get_cached_price(symbol, quote, allow_expired=False)
+    if cached_price is not None:
+        return cached_price
+
+    # Если есть устаревший кэш и разрешено, возвращаем его сразу и обновляем в фоне
+    if allow_stale:
+        stale_price = get_cached_price(symbol, quote, allow_expired=True)
+        if stale_price is not None:
+            if background_refresh:
+                _schedule_refresh(symbol, quote)
+            return stale_price
+
     for attempt in range(max_retries):
         try:
             # Добавляем случайную задержку для избежания rate limiting
             if attempt > 0:
-                delay = random.uniform(1.0, 3.0) * (attempt + 1)
+                delay = random.uniform(0.3, 0.7) * (attempt + 1)
                 # print(
                 #     f"⏳ Попытка {attempt + 1}/{max_retries}, задержка {delay:.1f}с..."
                 # )
@@ -652,6 +737,8 @@ def get_current_price_with_retry(
 
             price = get_current_price(symbol, quote)
             if price:
+                global _last_success_timestamp
+                _last_success_timestamp = time.time()
                 return price
 
         except Exception as e:
@@ -660,4 +747,15 @@ def get_current_price_with_retry(
                 # print(f"❌ Все попытки исчерпаны для {symbol}")
                 return None
 
+    # Если за все попытки не удалось обновить, возвращаем устаревшее значение, если оно есть
+    if allow_stale:
+        stale_price = get_cached_price(symbol, quote, allow_expired=True)
+        if stale_price is not None:
+            return stale_price
+
     return None
+
+
+def get_last_success_timestamp() -> Optional[float]:
+    """Возвращает timestamp последнего успешного запроса цены"""
+    return _last_success_timestamp

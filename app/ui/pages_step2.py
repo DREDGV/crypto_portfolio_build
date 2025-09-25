@@ -39,7 +39,7 @@ from app.core.services import (
 #     create_transactions_timeline_chart,
 #     create_strategy_performance_chart,
 #     create_source_activity_chart,
-#     get_portfolio_summary,
+#     get_portfolio_stats,
 # )
 
 # Импорт мониторинга кэша
@@ -81,6 +81,16 @@ def get_pnl_color(value):
         return "text-red-600"
     else:
         return "text-gray-600"
+
+
+def render_required_label(label_text: str, helper_text: str | None = None):
+    """Рендерит заголовок обязательного поля с пометкой."""
+    ui.html(
+        f'<span class="text-sm font-medium text-gray-700">{label_text} '
+        "<span class=\"text-red-500 font-semibold\">*</span></span>"
+    )
+    if helper_text:
+        ui.label(helper_text).classes("text-xs text-red-500 font-medium")
 
 
 def create_enhanced_stat_card(title, value, icon, color="primary"):
@@ -501,9 +511,7 @@ def open_enhanced_add_dialog():
             with ui.column().classes("gap-4"):
                 # Монета с автодополнением и кнопками быстрого выбора
                 with ui.column().classes("gap-1"):
-                    ui.label("💰 Монета *").classes(
-                        "text-sm font-medium text-gray-700"
-                    )
+                    render_required_label("💰 Монета", "Введите символ криптовалюты или используйте кнопки")
                     
                     # Поле ввода монеты
                     coin = (
@@ -560,27 +568,17 @@ def open_enhanced_add_dialog():
                                     "text-xs bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded"
                                 )
                     
-                    ui.label("Введите символ криптовалюты или используйте кнопки").classes(
-                        "text-xs text-gray-500"
-                    )
 
                 # Тип операции с иконками
                 with ui.column().classes("gap-1"):
-                    ui.label("📊 Тип операции *").classes(
-                        "text-sm font-medium text-gray-700"
-                    )
+                    render_required_label("📊 Тип операции", "buy = покупка, sell = продажа")
                     ttype = ui.select(
                         TYPES, label="Выберите тип", value="buy"
                     ).classes("w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent")
-                    ui.label("buy = покупка, sell = продажа").classes(
-                        "text-xs text-gray-500"
-                    )
 
                 # Количество с валидацией
                 with ui.column().classes("gap-1"):
-                    ui.label("📦 Количество *").classes(
-                        "text-sm font-medium text-gray-700"
-                    )
+                    render_required_label("📦 Количество", "Количество монет")
                     qty = (
                         ui.input(placeholder="0.0")
                         .props(
@@ -590,16 +588,11 @@ def open_enhanced_add_dialog():
                         .on("keydown.escape", lambda: None)  # Временно отключено
                         .on("keydown.ctrl+enter", on_add)
                     )
-                    ui.label("Количество монет").classes(
-                        "text-xs text-gray-500"
-                    )
 
                 # Цена с кнопкой "текущая цена"
                 with ui.column().classes("gap-1"):
                     with ui.row().classes("items-center gap-2"):
-                        ui.label("💵 Цена за монету *").classes(
-                            "text-sm font-medium text-gray-700"
-                        )
+                        render_required_label("💵 Цена за монету", f"Цена в {CURRENCY}")
                         ui.button(
                             "📊 Текущая цена", on_click=get_current_price
                         ).props("size=sm outline").classes("text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded").tooltip(
@@ -614,23 +607,15 @@ def open_enhanced_add_dialog():
                         .on("keydown.escape", lambda: None)  # Временно отключено
                         .on("keydown.ctrl+enter", on_add)
                     )
-                    ui.label(f"Цена в {CURRENCY}").classes(
-                        "text-xs text-gray-500"
-                    )
 
             # Правая колонка - дополнительные поля
             with ui.column().classes("gap-4"):
                 # Стратегия
                 with ui.column().classes("gap-1"):
-                    ui.label("🎯 Стратегия *").classes(
-                        "text-sm font-medium text-gray-700"
-                    )
+                    render_required_label("🎯 Стратегия", "long = долгосрочная, short = краткосрочная")
                     strategy = ui.select(
                         STRATS, label="Выберите стратегию", value="long"
                     ).classes("w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent")
-                    ui.label("long = долгосрочная, short = краткосрочная").classes(
-                        "text-xs text-gray-500"
-                    )
 
                 # Источник с выпадающим списком, кнопками быстрого выбора и управлением
                 with ui.column().classes("gap-1"):
@@ -730,20 +715,37 @@ def open_enhanced_add_dialog():
 
 
 def create_overview_tab():
-    """Создает вкладку обзора с улучшенными карточками"""
-    with ui.column().classes("w-full space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto p-4"):
-        # Заголовок
-        with ui.row().classes("items-center justify-between mb-6"):
-            ui.label("📊 Обзор портфеля").classes("text-3xl font-bold text-gray-800")
-            ui.button("🔄 Обновить", icon="refresh").classes(
-                "bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-semibold"
+    """Создает современную вкладку обзора с гармоничным дизайном"""
+    with ui.column().classes("w-full h-full p-6 space-y-6"):
+        # Заголовок с кнопкой обновления
+        with ui.row().classes("items-center justify-between"):
+            ui.label("Обзор портфеля").classes("text-2xl font-bold text-gray-800")
+            ui.button("Обновить", icon="refresh").classes(
+                "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
             ).on("click", lambda: refresh_overview_data())
 
-        # Контейнер для статистических карточек
-        stats_container = ui.row().classes("gap-6 mb-8")
+        # Статистические карточки в одну строку
+        stats_container = ui.row().classes("gap-4 w-full")
         
-        # Контейнер для топ позиций (определяем заранее)
-        top_positions_container = ui.column().classes("space-y-3")
+        # Основной контент в три равные колонки
+        with ui.row().classes("gap-4 flex-1"):
+            # Левая колонка - топ позиции
+            with ui.column().classes("flex-1"):
+                with ui.card().classes("p-4 bg-white shadow-sm rounded-lg border border-gray-200 h-full"):
+                    ui.label("Топ позиции").classes("text-lg font-semibold text-gray-800 mb-2")
+                    top_positions_container = ui.column().classes("space-y-1 max-h-[600px] overflow-y-auto")
+            
+            # Средняя колонка - худшие позиции
+            with ui.column().classes("flex-1"):
+                with ui.card().classes("p-4 bg-white shadow-sm rounded-lg border border-gray-200 h-full"):
+                    ui.label("Худшие позиции").classes("text-lg font-semibold text-gray-800 mb-2")
+                    worst_positions_container = ui.column().classes("space-y-1 max-h-[600px] overflow-y-auto")
+                
+            # Правая колонка - график портфеля
+            with ui.column().classes("flex-1"):
+                with ui.card().classes("p-6 bg-white shadow-sm rounded-lg border border-gray-200 h-full"):
+                    ui.label("Стоимость портфеля").classes("text-lg font-semibold text-gray-800 mb-4")
+                    portfolio_chart_container = ui.column().classes("flex-1 items-center justify-center")
         
         def refresh_top_positions():
             """Обновляет топ позиции"""
@@ -754,29 +756,99 @@ def create_overview_tab():
                     top_positions = portfolio_stats.get('top_positions', [])
                     
                     if top_positions:
-                        for i, pos in enumerate(top_positions[:3], 1):  # Показываем топ-3
+                        for i, pos in enumerate(top_positions[:5], 1):  # Показываем топ-5
                             coin = pos['coin']
                             value = pos.get('value', 0)
                             pnl = pos.get('unreal_pnl', 0)
                             pnl_color = "text-green-600" if pnl >= 0 else "text-red-600"
                             
-                            with ui.card().classes("p-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 transition-all duration-200"):
+                            with ui.card().classes("p-1 bg-gray-50 hover:bg-gray-100 transition-colors"):
                                 with ui.row().classes("items-center justify-between"):
-                                    with ui.column().classes("flex-1"):
-                                        ui.label(f"{coin}").classes("text-xl font-bold text-gray-800")
-                                        ui.label(f"Позиция #{i}").classes("text-sm text-gray-500")
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.label(f"#{i}").classes("text-xs text-gray-500 w-4 font-medium")
+                                        ui.label(f"{coin}").classes("font-semibold text-gray-800 text-xs")
                                     with ui.column().classes("text-right"):
-                                        ui.label(f"${value:.2f}").classes("text-2xl font-bold text-green-600")
-                                        ui.label(f"{pnl:+.2f}").classes(f"text-lg font-semibold {pnl_color}")
+                                        ui.label(f"${value:.2f}").classes("font-bold text-gray-800 text-xs")
+                                        ui.label(f"{pnl:+.2f}").classes(f"text-xs font-medium {pnl_color}")
                     else:
-                        with ui.card().classes("p-8 text-center bg-gray-50 rounded-lg"):
-                            ui.icon("inbox").classes("text-4xl text-gray-400 mb-2")
-                            ui.label("Нет позиций").classes("text-gray-500 italic text-lg")
+                        with ui.card().classes("p-6 text-center bg-gray-50"):
+                            ui.label("📊").classes("text-3xl mb-2")
+                            ui.label("Нет позиций").classes("text-gray-500")
                                 
                 except Exception as e:
-                    with ui.card().classes("p-8 text-center bg-red-50 rounded-lg"):
-                        ui.icon("error").classes("text-4xl text-red-400 mb-2")
-                        ui.label("Ошибка загрузки позиций").classes("text-red-500 text-lg")
+                    with ui.card().classes("p-6 text-center bg-red-50"):
+                        ui.label("⚠️").classes("text-3xl mb-2")
+                        ui.label("Ошибка загрузки").classes("text-red-500")
+        
+        def refresh_worst_positions():
+            """Обновляет худшие позиции (с наибольшими убытками)"""
+            worst_positions_container.clear()
+            with worst_positions_container:
+                try:
+                    portfolio_stats = get_portfolio_stats()
+                    positions = portfolio_stats.get('positions', [])
+                    
+                    if positions:
+                        # Сортируем по убыткам (возрастание, чтобы худшие были первыми)
+                        worst_positions = sorted(positions, key=lambda x: x.get('unreal_pnl', 0))[:5]
+                        
+                        for i, pos in enumerate(worst_positions, 1):
+                            coin = pos['coin']
+                            value = pos.get('value', 0)
+                            pnl = pos.get('unreal_pnl', 0)
+                            pnl_color = "text-green-600" if pnl >= 0 else "text-red-600"
+                            
+                            with ui.card().classes("p-1 bg-red-50 hover:bg-red-100 transition-colors"):
+                                with ui.row().classes("items-center justify-between"):
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.label(f"#{i}").classes("text-xs text-gray-500 w-4 font-medium")
+                                        ui.label(f"{coin}").classes("font-semibold text-gray-800 text-xs")
+                                    with ui.column().classes("text-right"):
+                                        ui.label(f"${value:.2f}").classes("font-bold text-gray-800 text-xs")
+                                        ui.label(f"{pnl:+.2f}").classes(f"text-xs font-medium {pnl_color}")
+                    else:
+                        with ui.card().classes("p-6 text-center bg-gray-50"):
+                            ui.label("📊").classes("text-3xl mb-2")
+                            ui.label("Нет позиций").classes("text-gray-500")
+                                
+                except Exception as e:
+                    with ui.card().classes("p-6 text-center bg-red-50"):
+                        ui.label("⚠️").classes("text-3xl mb-2")
+                        ui.label("Ошибка загрузки").classes("text-red-500")
+        
+        def refresh_portfolio_chart():
+            """Обновляет график портфеля"""
+            portfolio_chart_container.clear()
+            with portfolio_chart_container:
+                try:
+                    portfolio_stats = get_portfolio_stats()
+                    total_value = portfolio_stats.get('totals', {}).get('total_value', 0)
+                    total_unreal = portfolio_stats.get('totals', {}).get('total_unreal', 0)
+                    
+                    # Центральная визуализация
+                    with ui.column().classes("items-center space-y-4"):
+                        # Основная иконка
+                        ui.label("💰").classes("text-5xl")
+                        
+                        # Стоимость портфеля
+                        ui.label(f"${total_value:.2f}").classes("text-4xl font-bold text-blue-600")
+                        
+                        # Индикатор PnL
+                        if total_unreal >= 0:
+                            ui.label("📈").classes("text-3xl text-green-500")
+                            ui.label(f"+${total_unreal:.2f}").classes("text-lg font-semibold text-green-600")
+                        else:
+                            ui.label("📉").classes("text-3xl text-red-500")
+                            ui.label(f"${total_unreal:.2f}").classes("text-lg font-semibold text-red-600")
+                        
+                        # Дополнительная информация
+                        ui.label("Общая стоимость портфеля").classes("text-sm text-gray-600 text-center")
+                            
+                except Exception:
+                    with ui.column().classes("items-center space-y-4"):
+                        ui.label("📊").classes("text-5xl")
+                        ui.label("$0.00").classes("text-4xl font-bold text-gray-400")
+                        ui.label("Данные недоступны").classes("text-sm text-gray-500")
         
         def refresh_overview_data():
             """Обновляет данные на вкладке обзора"""
@@ -795,60 +867,38 @@ def create_overview_tab():
                     # Дневной PnL (пока упрощенно, можно улучшить)
                     daily_pnl = total_unreal  # В будущем можно добавить расчет дневного PnL
                     
-                    # Создаем карточки с реальными данными
-                    create_enhanced_stat_card("Общая стоимость", f"${total_value:.2f}", "💰", "primary")
-                    create_enhanced_stat_card("Дневной PnL", f"{daily_pnl:+.2f} USD", "📈", "success" if daily_pnl >= 0 else "warning")
-                    create_enhanced_stat_card("Нереализованный PnL", f"{total_unreal:+.2f} USD", "💎", "info" if total_unreal >= 0 else "warning")
-                    create_enhanced_stat_card("Реализованный PnL", f"{total_realized:+.2f} USD", "✅", "success" if total_realized >= 0 else "warning")
+                    # Создаем компактные карточки
+                    create_compact_stat_card("Общая стоимость", f"${total_value:.2f}", "💰")
+                    create_compact_stat_card("Дневной PnL", f"{daily_pnl:+.2f} USD", "📈", daily_pnl >= 0)
+                    create_compact_stat_card("Нереализованный PnL", f"{total_unreal:+.2f} USD", "💎", total_unreal >= 0)
+                    create_compact_stat_card("Реализованный PnL", f"{total_realized:+.2f} USD", "✅", total_realized >= 0)
                     
-                    # Обновляем топ позиции
+                    # Обновляем топ позиции, худшие позиции и график
                     refresh_top_positions()
+                    refresh_worst_positions()
+                    refresh_portfolio_chart()
                     
                 except Exception as e:
                     # В случае ошибки показываем пустые карточки
-                    create_enhanced_stat_card("Общая стоимость", "0.00 USD", "💰", "primary")
-                    create_enhanced_stat_card("Дневной PnL", "+0.00 USD", "📈", "success")
-                    create_enhanced_stat_card("Нереализованный PnL", "+0.00 USD", "💎", "info")
-                    create_enhanced_stat_card("Реализованный PnL", "+0.00 USD", "✅", "warning")
+                    create_compact_stat_card("Общая стоимость", "$0.00", "💰")
+                    create_compact_stat_card("Дневной PnL", "+$0.00", "📈", True)
+                    create_compact_stat_card("Нереализованный PnL", "+$0.00", "💎", True)
+                    create_compact_stat_card("Реализованный PnL", "+$0.00", "✅", True)
                     ui.notify(f"Ошибка загрузки данных: {e}", type="negative")
         
         # Инициализируем данные
         refresh_overview_data()
 
-        # Улучшенный контент в две колонки
-        with ui.row().classes("gap-6"):
-            # График стоимости портфеля (левая колонка)
-            with ui.card().classes("flex-1 p-6 bg-white shadow-lg rounded-xl border border-gray-200"):
-                ui.label("📈 Стоимость портфеля").classes("text-xl font-bold text-gray-800 mb-4")
-                
-                # Простой график стоимости портфеля
-                with ui.column().classes("h-64 items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg"):
-                    try:
-                        portfolio_stats = get_portfolio_stats()
-                        total_value = portfolio_stats.get('totals', {}).get('total_value', 0)
-                        
-                        # Простая визуализация стоимости
-                        with ui.column().classes("text-center"):
-                            ui.label("💰").classes("text-6xl mb-4")
-                            ui.label(f"${total_value:.2f}").classes("text-4xl font-bold text-blue-600 mb-2")
-                            ui.label("Общая стоимость").classes("text-lg text-gray-600")
-                            
-                            # Простой индикатор роста
-                            if total_value > 0:
-                                ui.label("📈 Портфель активен").classes("text-green-600 font-semibold mt-2")
-                            else:
-                                ui.label("📊 Нет данных").classes("text-gray-500 mt-2")
-                                
-                    except Exception as e:
-                        ui.label("График в разработке").classes("text-gray-500 text-lg")
 
-            # Топ позиции (правая колонка)
-            with ui.card().classes("flex-1 p-6 bg-white shadow-lg rounded-xl border border-gray-200"):
-                ui.label("🏆 Топ позиции").classes("text-xl font-bold text-gray-800 mb-4")
-                
-                # Используем уже созданный контейнер
-                with top_positions_container:
-                    pass  # Контейнер уже создан выше
+def create_compact_stat_card(title, value, icon, is_positive=True):
+    """Создает компактную статистическую карточку"""
+    color_class = "text-green-600" if is_positive else "text-red-600"
+    
+    with ui.card().classes("p-4 bg-white shadow-sm rounded-lg border border-gray-200 flex-1 hover:shadow-md transition-shadow"):
+        with ui.column().classes("items-center text-center space-y-2"):
+            ui.label(icon).classes("text-xl")
+            ui.label(value).classes(f"text-xl font-bold {color_class}")
+            ui.label(title).classes("text-sm text-gray-600 font-medium")
 
 
 def refresh():
@@ -965,7 +1015,7 @@ def portfolio_page():
                     .classes(
                         "w-full justify-start text-left bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-all duration-200"
                     )
-                    .on("click", lambda: switch_to_tab("overview"))
+                    .on("click", lambda: switch_tab_with_styles("overview"))
                 )
 
                 positions_btn = (
@@ -973,7 +1023,7 @@ def portfolio_page():
                     .classes(
                         "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                     )
-                    .on("click", lambda: switch_to_tab("positions"))
+                    .on("click", lambda: switch_tab_with_styles("positions"))
                 )
 
                 transactions_btn = (
@@ -981,7 +1031,7 @@ def portfolio_page():
                     .classes(
                         "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                     )
-                    .on("click", lambda: switch_to_tab("transactions"))
+                    .on("click", lambda: switch_tab_with_styles("transactions"))
                 )
 
                 analytics_btn = (
@@ -989,7 +1039,7 @@ def portfolio_page():
                     .classes(
                         "w-full justify-start text-left bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition-all duration-200"
                     )
-                    .on("click", lambda: switch_to_tab("analytics"))
+                    .on("click", lambda: switch_tab_with_styles("analytics"))
                 )
 
             # БЫСТРЫЕ ДЕЙСТВИЯ (улучшенная версия)
@@ -1400,239 +1450,6 @@ def show_about_page():
     show_new_about_page()
 
 
-def create_alerts_tab():
-    ui.add_head_html('''
-    <style>
-    .about-page {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        line-height: 1.6;
-    }
-    
-    .about-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 0 0 20px 20px;
-        margin-bottom: 2rem;
-    }
-    
-    .about-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
-        margin-bottom: 1.5rem;
-        overflow: hidden;
-    }
-    
-    .about-card-header {
-        background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
-        font-weight: 600;
-        color: #374151;
-    }
-    
-    .about-card-content {
-        padding: 1.5rem;
-    }
-    
-    .about-tabs {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1rem;
-    }
-    
-    .about-content {
-        font-size: 14px;
-        line-height: 1.7;
-        color: #374151;
-    }
-    
-    .about-content h1 {
-        font-size: 1.75rem !important;
-        font-weight: 700 !important;
-        margin: 1.5rem 0 1rem 0 !important;
-        color: #1f2937 !important;
-        border-bottom: 2px solid #e5e7eb !important;
-        padding-bottom: 0.5rem !important;
-    }
-    
-    .about-content h2 {
-        font-size: 1.4rem !important;
-        font-weight: 600 !important;
-        margin: 1.2rem 0 0.8rem 0 !important;
-        color: #374151 !important;
-        background: #f8fafc !important;
-        padding: 0.5rem 1rem !important;
-        border-left: 4px solid #3b82f6 !important;
-        border-radius: 4px !important;
-    }
-    
-    .about-content h3 {
-        font-size: 1.2rem !important;
-        font-weight: 600 !important;
-        margin: 1rem 0 0.6rem 0 !important;
-        color: #4b5563 !important;
-    }
-    
-    .about-content p {
-        font-size: 14px !important;
-        margin: 0.8rem 0 !important;
-        line-height: 1.7 !important;
-        color: #4b5563 !important;
-    }
-    
-    .about-content ul {
-        font-size: 14px !important;
-        margin: 0.8rem 0 !important;
-        padding-left: 1.5rem !important;
-    }
-    
-    .about-content li {
-        font-size: 14px !important;
-        margin: 0.4rem 0 !important;
-        line-height: 1.6 !important;
-        color: #4b5563 !important;
-    }
-    
-    .about-content strong {
-        font-weight: 600 !important;
-        color: #1f2937 !important;
-    }
-    
-    .about-content code {
-        background: #f1f5f9 !important;
-        padding: 0.2rem 0.4rem !important;
-        border-radius: 4px !important;
-        font-family: 'Courier New', monospace !important;
-        font-size: 13px !important;
-        color: #e11d48 !important;
-    }
-    
-    .version-badge {
-        background: linear-gradient(45deg, #10b981, #059669);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-weight: 600;
-        display: inline-block;
-        margin: 0.5rem 0;
-    }
-    
-    .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-    
-    .feature-item {
-        background: #f8fafc;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #3b82f6;
-    }
-    /* Полноэкранная типографика для markdown */
-    .about-markdown { 
-        width: 100% !important;
-        max-width: none !important;
-        padding: 0 24px !important;
-        font-size: 16px !important; 
-        line-height: 1.8 !important; 
-        color: #111827 !important;
-    }
-    .about-markdown h1 { font-size: 2rem !important; margin: 1.25rem 0 .75rem 0 !important; font-weight: 700 !important; }
-    .about-markdown h2 { font-size: 1.5rem !important; margin: 1rem 0 .5rem 0 !important; font-weight: 600 !important; }
-    .about-markdown h3 { font-size: 1.25rem !important; margin: .75rem 0 .4rem 0 !important; font-weight: 600 !important; }
-    .about-markdown p { margin: .6rem 0 !important; }
-    .about-markdown ul, .about-markdown ol { margin: .6rem 0 .6rem 1.25rem !important; }
-    .about-markdown li { margin: .35rem 0 !important; }
-    .about-markdown code { background:#f3f4f6 !important; padding:.15rem .35rem !important; border-radius:4px !important; }
-    .about-markdown table { border-collapse: collapse; width: 100%; margin: .8rem 0; }
-    .about-markdown th, .about-markdown td { border: 1px solid #e5e7eb; padding: .5rem .6rem; }
-    .about-markdown blockquote { border-left:4px solid #e5e7eb; padding-left:.8rem; color:#4b5563; margin:.8rem 0; }
-    </style>
-    ''')
-
-    # Создаем полноэкранный контент
-    with ui.column().classes("w-full h-screen overflow-hidden about-page"):
-        # Профессиональный заголовок
-        with ui.column().classes("about-header"):
-            with ui.row().classes("items-center justify-between mb-4"):
-                with ui.row().classes("items-center gap-3"):
-                    ui.icon("account_balance_wallet").classes("text-3xl")
-                    with ui.column().classes("gap-1"):
-                        ui.label(f"{app_info['name']}").classes("text-2xl font-bold")
-                        ui.label("Профессиональное управление криптовалютным портфелем").classes("text-lg opacity-90")
-                ui.button(icon="arrow_back", color="white").props("flat round").on(
-                    "click", lambda: ui.navigate.to("/")
-                )
-            
-            with ui.row().classes("items-center gap-4"):
-                ui.label(f"Версия {app_info['version']}").classes("version-badge")
-                ui.label("•").classes("text-white opacity-50")
-                ui.label("Python + NiceGUI").classes("text-white opacity-90")
-                ui.label("•").classes("text-white opacity-50")
-                ui.label("SQLite + SQLModel").classes("text-white opacity-90")
-
-        # Содержимое с профессиональными табами (на всю ширину и высоту)
-        with ui.column().classes("px-0 pb-6 flex-1 overflow-y-auto w-full"):
-            with ui.tabs().classes("about-tabs") as tabs:
-                ui.tab("📋 Общая информация", icon="info")
-                ui.tab("📝 История изменений", icon="history")
-                ui.tab("💡 Концепция", icon="lightbulb")
-                ui.tab("🚀 Планы развития", icon="trending_up")
-
-            with ui.tab_panels(tabs, value="📋 Общая информация").classes("w-full"):
-                # Общая информация: полноформатный просмотр README.md
-                with ui.tab_panel("📋 Общая информация"):
-                    with ui.scroll_area().classes("w-full"):
-                        with ui.column().classes("p-6 w-full"):
-                            try:
-                                from pathlib import Path as _P
-                                readme_path = _P(__file__).resolve().parents[3] / "README.md"
-                                readme_text = readme_path.read_text(encoding="utf-8") if readme_path.exists() else f"# {app_info['name']}\n\n{app_info['description']}\n\nВерсия: {app_info['version']}"
-                            except Exception:
-                                readme_text = f"# {app_info['name']}\n\n{app_info['description']}\n\nВерсия: {app_info['version']}"
-                            ui.markdown(readme_text).classes("about-markdown")
-
-                # История изменений
-                with ui.tab_panel("📝 История изменений"):
-                    with ui.scroll_area().classes("w-full"):
-                        with ui.column().classes("p-6 w-full"):
-                            changelog_text = app_info.get("changelog", "Ченджлог недоступен")
-                            if changelog_text and changelog_text != "Ченджлог недоступен":
-                                ui.markdown(changelog_text).classes("about-markdown")
-                            else:
-                                with ui.card().classes("about-card"):
-                                    ui.label("📝 История изменений").classes("text-lg font-semibold mb-2")
-                                    ui.label("Ченджлог загружается...").classes("text-gray-600")
-
-                # Концепция
-                with ui.tab_panel("💡 Концепция"):
-                    with ui.scroll_area().classes("w-full"):
-                        with ui.column().classes("p-6 w-full"):
-                            concept_text = app_info.get("concept", "Концепция недоступна")
-                            if concept_text and concept_text != "Концепция недоступна":
-                                ui.markdown(concept_text).classes("about-markdown")
-                            else:
-                                with ui.card().classes("about-card"):
-                                    ui.label("💡 Концепция").classes("text-lg font-semibold mb-2")
-                                    ui.label("Концепция загружается...").classes("text-gray-600")
-
-                # Планы развития
-                with ui.tab_panel("🚀 Планы развития"):
-                    with ui.scroll_area().classes("w-full"):
-                        with ui.column().classes("p-6 w-full"):
-                            roadmap_text = app_info.get("roadmap", "Планы недоступны")
-                            if roadmap_text and roadmap_text != "Планы недоступны":
-                                ui.markdown(roadmap_text).classes("about-markdown")
-                            else:
-                                with ui.card().classes("about-card"):
-                                    ui.label("🚀 Планы развития").classes("text-lg font-semibold mb-2")
-                                    ui.label("Планы загружаются...").classes("text-gray-600")
 
 
 def create_alerts_tab():
@@ -1799,7 +1616,7 @@ def create_charts_tab():
         
         # Сводные карточки
         with ui.row().classes("w-full gap-4 mb-6"):
-            summary = get_portfolio_summary()
+            summary = get_portfolio_stats()
             
             with ui.card().classes("p-4 bg-blue-50 border-l-4 border-blue-400"):
                 ui.label("Всего сделок").classes("text-sm text-gray-600")
@@ -1849,10 +1666,10 @@ def create_charts_tab():
                 ui.notify("Обновление графиков...", type="info")
                 
                 # Обновляем каждый график
-                portfolio_chart_container.content = create_portfolio_distribution_chart()
-                timeline_chart_container.content = create_transactions_timeline_chart()
-                strategy_chart_container.content = create_strategy_performance_chart()
-                source_chart_container.content = create_source_activity_chart()
+                # portfolio_chart_container.content = create_portfolio_distribution_chart()
+                # timeline_chart_container.content = create_transactions_timeline_chart()
+                # strategy_chart_container.content = create_strategy_performance_chart()
+                # source_chart_container.content = create_source_activity_chart()
                 
                 ui.notify("Графики обновлены!", type="positive")
             except Exception as e:
@@ -1861,7 +1678,7 @@ def create_charts_tab():
         def show_portfolio_summary():
             """Показывает детальную сводку портфеля"""
             try:
-                summary = get_portfolio_summary()
+                summary = get_portfolio_stats()
                 
                 with ui.dialog() as dialog, ui.card().classes("p-6 w-96"):
                     ui.label("📊 Сводка портфеля").classes("text-lg font-semibold mb-4")

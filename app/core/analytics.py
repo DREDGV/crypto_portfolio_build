@@ -10,6 +10,7 @@ import statistics
 
 from app.core.services import list_transactions, get_portfolio_stats, positions_fifo, enrich_positions_with_market
 from app.core.models import Transaction
+from app.core.taxonomy import INBOUND_POSITION_TYPES, OUTBOUND_POSITION_TYPES, normalize_transaction_type
 
 
 def calculate_realized_pnl() -> Dict[str, Any]:
@@ -36,7 +37,8 @@ def calculate_realized_pnl() -> Dict[str, Any]:
         total_sold = 0.0
         
         for tx in txs:
-            if tx['type'] in ['buy', 'deposit', 'exchange_in']:
+        tx_type = normalize_transaction_type(tx['type'])
+        if tx_type in INBOUND_POSITION_TYPES:
                 qty = tx.get('quantity', 0)
                 buy_queue.append({
                     'qty': qty,
@@ -44,7 +46,7 @@ def calculate_realized_pnl() -> Dict[str, Any]:
                     'date': tx['created_at']
                 })
                 total_bought += qty * tx['price']
-            elif tx['type'] in ['sell', 'withdrawal', 'exchange_out']:
+        elif tx_type in OUTBOUND_POSITION_TYPES:
                 qty = tx.get('quantity', 0)
                 remaining_sell = qty
                 sell_price = tx['price']
@@ -196,9 +198,10 @@ def calculate_roi_by_periods() -> Dict[str, Any]:
         
         for tx in period_txs:
             qty = tx.get('quantity', tx.get('qty', 0))
-            if tx['type'] in ['buy', 'deposit', 'exchange_in']:
+        tx_type = normalize_transaction_type(tx['type'])
+        if tx_type in INBOUND_POSITION_TYPES:
                 period_invested += qty * tx['price']
-            elif tx['type'] in ['sell', 'withdrawal', 'exchange_out']:
+        elif tx_type in OUTBOUND_POSITION_TYPES:
                 period_withdrawn += qty * tx['price']
         
         period_net = period_invested - period_withdrawn

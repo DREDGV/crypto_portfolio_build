@@ -8,11 +8,11 @@ from sqlmodel import Field, SQLModel
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     coin: str
-    type: str  # buy/sell/exchange_in/exchange_out/deposit/withdrawal
+    type: str  # trade_buy/trade_sell/transfer_in/transfer_out/fiat_deposit/fiat_withdrawal/income_.../expense_...
     quantity: float
     price: float
     ts_utc: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    strategy: str  # long/mid/short/scalp
+    strategy: str  # long_term/swing/scalp/arbitrage/hedge/income_hold
     source: Optional[str] = None
     notes: Optional[str] = None
 

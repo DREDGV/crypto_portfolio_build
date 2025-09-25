@@ -7,15 +7,27 @@ import json
 
 from sqlmodel import Session, select
 
-from app.adapters.prices import get_current_price
 from app.core.models import Transaction, TransactionIn, SourceMeta, PriceAlert, PriceAlertIn
 from app.storage.db import DB_PATH, engine
 from app.core.cache import (
-    cached, cache_portfolio_stats, get_cached_portfolio_stats,
-    cache_transactions, get_cached_transactions,
-    cache_sources, get_cached_sources,
-    cache_price_alerts, get_cached_price_alerts,
-    invalidate_data_cache
+    cached,
+    cache_portfolio_stats,
+    get_cached_portfolio_stats,
+    cache_transactions,
+    get_cached_transactions,
+    cache_sources,
+    get_cached_sources,
+    cache_price_alerts,
+    get_cached_price_alerts,
+    invalidate_data_cache,
+)
+from app.core.taxonomy import (
+    INBOUND_POSITION_TYPES,
+    OUTBOUND_POSITION_TYPES,
+    TYPE_META,
+    STRATEGY_META,
+    normalize_transaction_type,
+    normalize_strategy,
 )
 
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
@@ -29,7 +41,10 @@ def add_transaction(data: TransactionIn) -> int:
     if data.price < 0:
         raise ValueError("price must be >= 0")
     with Session(engine) as session:
-        t = Transaction(**data.model_dump())
+        tx_data = data.model_dump()
+        tx_data["type"] = normalize_transaction_type(tx_data.get("type"))
+        tx_data["strategy"] = normalize_strategy(tx_data.get("strategy"))
+        t = Transaction(**tx_data)
         session.add(t)
         session.commit()
         session.refresh(t)
@@ -64,10 +79,10 @@ def update_transaction(tx_id: int, data: TransactionIn) -> None:
         if not t:
             return
         t.coin = data.coin
-        t.type = data.type
+        t.type = normalize_transaction_type(data.type)
         t.quantity = data.quantity
         t.price = data.price
-        t.strategy = data.strategy
+        t.strategy = normalize_strategy(data.strategy)
         t.source = data.source
         t.notes = data.notes
         session.add(t)
@@ -97,11 +112,11 @@ def list_transactions() -> list[dict]:
             {
                 "id": t.id,
                 "coin": t.coin,
-                "type": t.type,
+                "type": normalize_transaction_type(t.type),
                 "quantity": t.quantity,
                 "price": t.price,
                 "created_at": ts_local.strftime("%Y-%m-%d %H:%M:%S"),  # Исправлено: было ts_local
-                "strategy": t.strategy,
+                "strategy": normalize_strategy(t.strategy),
                 "source": t.source or "",  # Уже правильно
                 "notes": t.notes or "",
             }
@@ -122,9 +137,12 @@ def positions_fifo() -> list[dict]:
     realized: dict[tuple[str, str], float] = defaultdict(float)
     for t in items:
         key = (t.coin.upper(), t.strategy)
-        if t.type in ("buy", "exchange_in", "deposit"):
+        tx_type = normalize_transaction_type(t.type)
+        strat = normalize_strategy(t.strategy)
+        key = (t.coin.upper(), strat)
+        if tx_type in INBOUND_POSITION_TYPES:
             lots[key].append({"qty": float(t.quantity), "price": float(t.price)})
-        elif t.type in ("sell", "exchange_out", "withdrawal"):
+        elif tx_type in OUTBOUND_POSITION_TYPES:
             qty_left = float(t.quantity)
             sell_price = float(t.price)
             while qty_left > 0 and lots[key]:
@@ -177,17 +195,21 @@ def enrich_positions_with_market(positions: list[dict], quote: str = "USD"):
     for p in positions:
         coin = p["coin"]
         # Используем функцию с повторными попытками для получения цены
-        from app.adapters.prices import get_current_price_with_retry
-        price = get_current_price_with_retry(coin, quote=quote) or 0.0
-        
-        # Если цена все еще 0, пытаемся получить из кэша или используем последнюю известную цену
+        from app.adapters.prices import (
+            get_current_price_with_retry,
+            get_cached_price,
+            get_cache_entry,
+        )
+        cache_entry = get_cache_entry(coin, quote)
+        price = cache_entry.price if cache_entry else 0.0
         if price == 0.0:
-            # Попробуем получить цену из кэша
-            from app.adapters.prices import _cache
-            cache_key = (coin.upper(), quote.lower())
-            if cache_key in _cache:
-                cached_entry = _cache[cache_key]
-                price = cached_entry.price if hasattr(cached_entry, 'price') else cached_entry[0]
+            price = get_current_price_with_retry(coin, quote=quote) or 0.0
+        
+        # Если цена все еще 0, пытаемся выбрать из кэша
+        if price == 0.0:
+            cached_price = get_cached_price(coin, quote=quote, allow_expired=True)
+            if cached_price is not None:
+                price = cached_price
         
         value = p["quantity"] * price
         unreal = value - p["cost_basis"]
@@ -310,8 +332,8 @@ def get_portfolio_stats() -> dict:
     
     # Предзагружаем популярные монеты для лучшего получения цен
     try:
-        from app.adapters.prices import preload_popular_coins
-        preload_popular_coins()
+        from app.adapters.prices import ensure_preload_popular_coins
+        ensure_preload_popular_coins()
     except Exception:
         pass  # Игнорируем ошибки предзагрузки
     
@@ -362,6 +384,9 @@ def get_portfolio_stats() -> dict:
     total_coins = len(coin_stats)
     total_strategies = len(strategy_stats)
 
+    from app.adapters.prices import get_last_success_timestamp
+    price_timestamp = get_last_success_timestamp()
+ 
     result = {
         "totals": totals,
         "coin_stats": coin_stats,
@@ -372,6 +397,7 @@ def get_portfolio_stats() -> dict:
             "total_coins": total_coins,
             "total_strategies": total_strategies,
         },
+        "price_freshness": price_timestamp,
     }
     
     # Кэшируем результат
