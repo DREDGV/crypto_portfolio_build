@@ -48,6 +48,9 @@ from app.ui.cache_monitor import create_cache_monitor_tab
 # Импорт экспорта/импорта
 from app.ui.export_import import create_export_import_tab
 
+# Импорт вкладки акций
+from app.ui.stocks_tab import create_stocks_tab
+
 # Импорт аналитики
 from app.ui.analytics_simple import create_analytics_tab
 # from app.ui.advanced_analytics import create_advanced_analytics_tab
