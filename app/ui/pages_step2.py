@@ -55,6 +55,9 @@ from app.ui.analytics_simple import create_analytics_tab
 # Импорт уведомлений (временно отключено)
 # from app.ui.notifications import create_notifications_tab
 
+# Импорт вкладки акций
+from app.ui.stocks_tab import create_stocks_tab
+
 CURRENCY = os.getenv("REPORT_CURRENCY", "USD").upper()
 TYPES = ["buy", "sell", "exchange_in", "exchange_out", "deposit", "withdrawal"]
 STRATS = ["long", "mid", "short", "scalp"]
@@ -1172,6 +1175,8 @@ def portfolio_page():
                         #     create_notifications_tab()
                         elif current_tab_value == "export_import":
                             create_export_import_tab()
+                        elif current_tab_value == "stocks":
+                            create_stocks_tab()
                 
                 # Создаем кнопки-вкладки
                 with ui.row().classes("w-full mb-6 border-b border-gray-200 bg-white"):
@@ -1206,6 +1211,12 @@ def portfolio_page():
                         "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
                         "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
                     ).on("click", lambda: switch_tab_with_styles("analytics"))
+                    
+                    # Кнопка Акции
+                    tab_buttons["stocks"] = ui.button("📈 Акции").classes(
+                        "px-6 py-3 text-sm font-medium border-b-2 border-transparent "
+                        "hover:border-gray-300 transition-all duration-200 min-w-[140px]"
+                    ).on("click", lambda: switch_tab_with_styles("stocks"))
                     
                     # Кнопка Расширенная аналитика (временно отключена)
                     # tab_buttons["advanced_analytics"] = ui.button("📊 Графики").classes(
