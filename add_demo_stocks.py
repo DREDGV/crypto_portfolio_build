@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Скрипт для добавления демо-данных российских акций"""
 
-from app.services.broker_service import StockService
-from app.models.broker_models import StockInstrument, StockTransactionIn
 from datetime import datetime
+
+from app.models.broker_models import StockInstrument, StockTransactionIn
+from app.services.broker_service import StockService
+
 
 def add_demo_instruments():
     """Добавляет демо-инструменты российских акций"""
     try:
         print("🔄 Добавление демо-инструментов...")
-        
+
         stock_service = StockService()
-        
+
         # Популярные российские акции
         demo_instruments = [
             StockInstrument(
@@ -21,7 +23,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="GAZP",
@@ -30,7 +32,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="LKOH",
@@ -39,7 +41,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="NVTK",
@@ -48,7 +50,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="ROSN",
@@ -57,7 +59,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="NLMK",
@@ -66,7 +68,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="MAGN",
@@ -75,7 +77,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="CHMF",
@@ -84,7 +86,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="PLZL",
@@ -93,7 +95,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="TATN",
@@ -102,7 +104,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="YNDX",
@@ -111,7 +113,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="OZON",
@@ -120,7 +122,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="QIWI",
@@ -129,7 +131,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="MAIL",
@@ -138,7 +140,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="VKCO",
@@ -147,7 +149,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="AFLT",
@@ -156,7 +158,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="SMLT",
@@ -165,7 +167,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="MGNT",
@@ -174,7 +176,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="RUAL",
@@ -183,7 +185,7 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
+                is_active=True,
             ),
             StockInstrument(
                 ticker="ALRS",
@@ -192,21 +194,24 @@ def add_demo_instruments():
                 lot_size=1,
                 currency="RUB",
                 broker_id="tinkoff",
-                is_active=True
-            )
+                is_active=True,
+            ),
         ]
-        
+
         # Добавляем инструменты
         added_count = 0
         for instrument in demo_instruments:
             try:
                 # Проверяем, существует ли инструмент
-                existing = stock_service.get_broker_instruments("tinkoff", instrument.ticker)
+                existing = stock_service.get_broker_instruments(
+                    "tinkoff", instrument.ticker
+                )
                 if not existing:
                     # Добавляем новый инструмент
-                    from app.storage.db import engine
                     from sqlmodel import Session
-                    
+
+                    from app.storage.db import engine
+
                     with Session(engine) as session:
                         session.add(instrument)
                         session.commit()
@@ -214,24 +219,25 @@ def add_demo_instruments():
                         print(f"✅ Добавлен: {instrument.ticker} - {instrument.name}")
                 else:
                     print(f"⚠️ Уже существует: {instrument.ticker}")
-                    
+
             except Exception as e:
                 print(f"❌ Ошибка добавления {instrument.ticker}: {e}")
-        
+
         print(f"\n✅ Добавлено {added_count} демо-инструментов")
         return True
-        
+
     except Exception as e:
         print(f"❌ Ошибка добавления демо-инструментов: {e}")
         return False
+
 
 def add_demo_transactions():
     """Добавляет демо-транзакции"""
     try:
         print("\n🔄 Добавление демо-транзакций...")
-        
+
         stock_service = StockService()
-        
+
         # Демо-транзакции
         demo_transactions = [
             StockTransactionIn(
@@ -241,7 +247,7 @@ def add_demo_transactions():
                 price=250.50,
                 commission=25.05,
                 transaction_type="buy",
-                transaction_date=datetime(2024, 1, 15)
+                transaction_date=datetime(2024, 1, 15),
             ),
             StockTransactionIn(
                 ticker="GAZP",
@@ -250,7 +256,7 @@ def add_demo_transactions():
                 price=180.25,
                 commission=90.13,
                 transaction_type="buy",
-                transaction_date=datetime(2024, 2, 10)
+                transaction_date=datetime(2024, 2, 10),
             ),
             StockTransactionIn(
                 ticker="LKOH",
@@ -259,7 +265,7 @@ def add_demo_transactions():
                 price=4500.00,
                 commission=225.00,
                 transaction_type="buy",
-                transaction_date=datetime(2024, 3, 5)
+                transaction_date=datetime(2024, 3, 5),
             ),
             StockTransactionIn(
                 ticker="YNDX",
@@ -268,40 +274,43 @@ def add_demo_transactions():
                 price=3200.75,
                 commission=64.02,
                 transaction_type="buy",
-                transaction_date=datetime(2024, 4, 20)
-            )
+                transaction_date=datetime(2024, 4, 20),
+            ),
         ]
-        
+
         added_count = 0
         for transaction in demo_transactions:
             try:
                 success = stock_service.add_stock_transaction(transaction)
                 if success:
                     added_count += 1
-                    print(f"✅ Добавлена транзакция: {transaction.ticker} - {transaction.quantity} шт. по {transaction.price} ₽")
+                    print(
+                        f"✅ Добавлена транзакция: {transaction.ticker} - {transaction.quantity} шт. по {transaction.price} ₽"
+                    )
                 else:
                     print(f"❌ Ошибка добавления транзакции: {transaction.ticker}")
-                    
+
             except Exception as e:
                 print(f"❌ Ошибка добавления транзакции {transaction.ticker}: {e}")
-        
+
         print(f"\n✅ Добавлено {added_count} демо-транзакций")
         return True
-        
+
     except Exception as e:
         print(f"❌ Ошибка добавления демо-транзакций: {e}")
         return False
 
+
 if __name__ == "__main__":
     print("🚀 Добавление демо-данных для российских акций")
     print("=" * 50)
-    
+
     # Добавляем инструменты
     instruments_success = add_demo_instruments()
-    
+
     # Добавляем транзакции
     transactions_success = add_demo_transactions()
-    
+
     if instruments_success and transactions_success:
         print("\n🎉 Демо-данные успешно добавлены!")
         print("Теперь вы можете:")

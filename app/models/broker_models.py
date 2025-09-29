@@ -3,13 +3,15 @@
 """
 
 from datetime import datetime
-from typing import Optional, List
-from sqlmodel import SQLModel, Field, Relationship
+from typing import List, Optional
+
 from pydantic import BaseModel
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class BrokerBase(SQLModel):
     """Базовая модель брокера"""
+
     name: str = Field(max_length=100, description="Название брокера")
     api_url: Optional[str] = Field(default=None, description="URL API брокера")
     is_active: bool = Field(default=True, description="Активен ли брокер")
@@ -18,12 +20,13 @@ class BrokerBase(SQLModel):
 
 class Broker(BrokerBase, table=True):
     """Модель брокера в базе данных"""
+
     __tablename__ = "brokers"
-    
+
     id: str = Field(primary_key=True, description="Уникальный идентификатор брокера")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Связи
     instruments: List["StockInstrument"] = Relationship(back_populates="broker")
     transactions: List["StockTransaction"] = Relationship(back_populates="broker")
@@ -31,6 +34,7 @@ class Broker(BrokerBase, table=True):
 
 class BrokerIn(BaseModel):
     """Модель для создания брокера"""
+
     id: str
     name: str
     api_url: Optional[str] = None
@@ -40,9 +44,12 @@ class BrokerIn(BaseModel):
 
 class StockInstrumentBase(SQLModel):
     """Базовая модель инструмента"""
+
     ticker: str = Field(max_length=20, description="Тикер акции")
     name: str = Field(max_length=200, description="Полное название компании")
-    sector: Optional[str] = Field(default=None, max_length=100, description="Сектор экономики")
+    sector: Optional[str] = Field(
+        default=None, max_length=100, description="Сектор экономики"
+    )
     lot_size: int = Field(default=1, description="Размер лота")
     currency: str = Field(default="RUB", max_length=3, description="Валюта торговли")
     is_active: bool = Field(default=True, description="Активен ли инструмент")
@@ -50,13 +57,14 @@ class StockInstrumentBase(SQLModel):
 
 class StockInstrument(StockInstrumentBase, table=True):
     """Модель инструмента в базе данных"""
+
     __tablename__ = "stock_instruments"
-    
+
     id: int = Field(primary_key=True)
     broker_id: str = Field(foreign_key="brokers.id", description="ID брокера")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Связи
     broker: Broker = Relationship(back_populates="instruments")
     transactions: List["StockTransaction"] = Relationship(back_populates="instrument")
@@ -64,6 +72,7 @@ class StockInstrument(StockInstrumentBase, table=True):
 
 class StockInstrumentIn(BaseModel):
     """Модель для создания инструмента"""
+
     ticker: str
     name: str
     broker_id: str
@@ -75,6 +84,7 @@ class StockInstrumentIn(BaseModel):
 
 class StockTransactionBase(SQLModel):
     """Базовая модель транзакции с акциями"""
+
     ticker: str = Field(max_length=20, description="Тикер акции")
     quantity: int = Field(description="Количество акций")
     price: float = Field(description="Цена за акцию")
@@ -85,14 +95,19 @@ class StockTransactionBase(SQLModel):
 
 class StockTransaction(StockTransactionBase, table=True):
     """Модель транзакции в базе данных"""
+
     __tablename__ = "stock_transactions"
-    
+
     id: int = Field(primary_key=True)
     broker_id: str = Field(foreign_key="brokers.id", description="ID брокера")
-    instrument_id: int = Field(foreign_key="stock_instruments.id", description="ID инструмента")
-    transaction_date: datetime = Field(default_factory=datetime.utcnow, description="Дата сделки")
+    instrument_id: int = Field(
+        foreign_key="stock_instruments.id", description="ID инструмента"
+    )
+    transaction_date: datetime = Field(
+        default_factory=datetime.utcnow, description="Дата сделки"
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Связи
     broker: Broker = Relationship(back_populates="transactions")
     instrument: StockInstrument = Relationship(back_populates="transactions")
@@ -100,6 +115,7 @@ class StockTransaction(StockTransactionBase, table=True):
 
 class StockTransactionIn(BaseModel):
     """Модель для создания транзакции"""
+
     ticker: str
     broker_id: str
     quantity: int
@@ -112,6 +128,7 @@ class StockTransactionIn(BaseModel):
 
 class StockPosition(BaseModel):
     """Модель позиции по акции"""
+
     ticker: str
     broker_id: str
     broker_name: str
@@ -123,10 +140,17 @@ class StockPosition(BaseModel):
     unrealized_pnl_percent: Optional[float] = None
     sector: Optional[str] = None
     currency: str = "RUB"
+    # Новые поля для детального отчета
+    first_purchase_date: Optional[datetime] = None
+    last_purchase_date: Optional[datetime] = None
+    total_invested: Optional[float] = None
+    total_commission: Optional[float] = None
+    transactions_count: Optional[int] = None
 
 
 class BrokerStats(BaseModel):
     """Статистика по брокеру"""
+
     broker_id: str
     broker_name: str
     total_instruments: int
@@ -138,6 +162,7 @@ class BrokerStats(BaseModel):
 
 class StockPortfolioStats(BaseModel):
     """Общая статистика портфеля акций"""
+
     total_brokers: int
     total_instruments: int
     total_transactions: int

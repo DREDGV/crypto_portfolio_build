@@ -5,6 +5,7 @@ import os
 import shutil
 from datetime import datetime
 
+
 def backup_database():
     """Создает резервную копию базы данных"""
     db_path = "data/portfolio.db"
@@ -16,30 +17,33 @@ def backup_database():
         return backup_path
     return None
 
+
 def recreate_database():
     """Пересоздает базу данных с новыми таблицами"""
     try:
         print("🔄 Пересоздание базы данных...")
-        
+
         # Создаем резервную копию
         backup_path = backup_database()
-        
+
         # Удаляем старую базу данных
         db_path = "data/portfolio.db"
         if os.path.exists(db_path):
             os.remove(db_path)
             print("✅ Старая база данных удалена")
-        
+
         # Инициализируем новую базу данных
         from app.storage.db import init_db
+
         init_db()
         print("✅ Новая база данных создана")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Ошибка пересоздания базы данных: {e}")
         return False
+
 
 if __name__ == "__main__":
     success = recreate_database()
