@@ -389,7 +389,7 @@ def create_alerts_tab():
                             )
                         alert_type_select = (
                             ui.select(
-                                options=[
+                                [
                                     "Цена выше",
                                     "Цена ниже",
                                     "Изменение цены на %",

@@ -89,8 +89,6 @@ def create_export_import_tab():
                         auto_upload=True,
                         max_file_size=10 * 1024 * 1024  # 10MB
                     ).classes("w-full")
-                    
-                    csv_upload.props('accept=".csv"')
                 
                 # Импорт JSON
                 with ui.column().classes("flex-1"):
@@ -102,8 +100,6 @@ def create_export_import_tab():
                         auto_upload=True,
                         max_file_size=50 * 1024 * 1024  # 50MB
                     ).classes("w-full")
-                    
-                    json_upload.props('accept=".json"')
         
         # Результаты импорта
         import_results_container = ui.column().classes("w-full")
